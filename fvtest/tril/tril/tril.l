@@ -43,7 +43,7 @@
             };
 
 [-]?0x[0-9a-fA-F]+      {
-                yylval.integer = strtol(yytext, NULL, 16);
+                yylval.integer = strtoul(yytext, NULL, 16);
                 return INTEGER;
             }
 
