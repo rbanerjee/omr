@@ -36,7 +36,7 @@
 #include "ilgen/IlInjector.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "infra/Cfg.hpp"
-#include "ras/ILValidator.hpp"
+#include "ras/ILValidator.hpp"      // for ILValidator
 
 #define OPT_DETAILS "O^O ILGEN: "
 
@@ -137,7 +137,7 @@ OMR::IlInjector::genIL()
    if (success)
       {
       TR::ILValidator validator(_comp);
-      success = validator.treesAreValid(_methodSymbol->getFirstTreeTop());
+      success = validator.validate();
       }
 
    return success;
