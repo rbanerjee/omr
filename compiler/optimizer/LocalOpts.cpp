@@ -76,7 +76,6 @@
 #include "infra/BitVector.hpp"                 // for TR_BitVector, etc
 #include "infra/Cfg.hpp"                       // for CFG, etc
 #include "infra/ILWalk.hpp"
-#include "ras/ILValidator.hpp"                 // for TR::ILValidator
 #include "infra/Link.hpp"                      // for TR_LinkHeadAndTail, etc
 #include "infra/List.hpp"                      // for List, TR_ScratchList, etc
 #include "optimizer/Inliner.hpp"               // for TR_InlineCall, etc
@@ -95,6 +94,7 @@
 #include "optimizer/UseDefInfo.hpp"            // for TR_UseDefInfo
 #include "ras/Debug.hpp"                       // for TR_DebugBase
 #include "ras/DebugCounter.hpp"                // for TR::DebugCounter, etc
+#include "ras/ILValidator.hpp"                 // for ILValidator
 #include "runtime/Runtime.hpp"
 
 #ifdef J9_PROJECT_SPECIFIC
@@ -8211,7 +8211,7 @@ TR_ColdBlockMarker::perform()
    if (validate)
       {
       TR::ILValidator validator(comp());
-      validator.treesAreValid(comp()->getStartTree());
+      validator.validate();
       }
 
    identifyColdBlocks();
