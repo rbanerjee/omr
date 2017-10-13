@@ -76,7 +76,7 @@
 #include "infra/BitVector.hpp"                 // for TR_BitVector, etc
 #include "infra/Cfg.hpp"                       // for CFG, etc
 #include "infra/ILWalk.hpp"
-#include "ras/ILValidator.hpp"                 // for TR::ILValidator
+#include "ras/ILValidatorDefaultDriver.hpp"    // for TR::ILValidatorDefaultDriver
 #include "infra/Link.hpp"                      // for TR_LinkHeadAndTail, etc
 #include "infra/List.hpp"                      // for List, TR_ScratchList, etc
 #include "optimizer/Inliner.hpp"               // for TR_InlineCall, etc
@@ -8210,7 +8210,7 @@ TR_ColdBlockMarker::perform()
    static char *validate = feGetEnv("TR_validateBeforeColdBlockMarker");
    if (validate)
       {
-      TR::ILValidator validator(comp());
+      TR::ILValidatorDefaultDriver validator(comp());
       validator.treesAreValid(comp()->getStartTree());
       }
 

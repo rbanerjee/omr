@@ -38,7 +38,7 @@
 #include "infra/Cfg.hpp"                       // for CFG
 #include "infra/Flags.hpp"                     // for flags32_t
 #include "infra/List.hpp"                      // for List
-#include "ras/ILValidator.hpp"                 // for TR::ILValidator
+#include "ras/ILValidatorDefaultDriver.hpp"    // for TR::ILValidatorDefaultDriver
 #include "optimizer/Optimizations.hpp"
 #include "optimizer/Optimizer.hpp"             // for Optimizer
 #include "env/CompilerEnv.hpp"
@@ -286,9 +286,9 @@ void OMR::OptimizationManager::performChecks()
          }
       else
          {
-         TR::ILValidator validator(self()->comp());
-         auto methodSymbol = self()->comp()->getMethodSymbol();
-         validator.treesAreValid(methodSymbol->getFirstTreeTop(), methodSymbol->getLastTreeTop());
+           TR::ILValidatorDefaultDriver validator(self()->comp());
+           auto methodSymbol = self()->comp()->getMethodSymbol();
+           validator.treesAreValid(methodSymbol->getFirstTreeTop(), methodSymbol->getLastTreeTop());
          }
       }
 
