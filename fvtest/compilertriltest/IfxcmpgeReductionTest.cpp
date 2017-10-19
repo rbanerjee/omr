@@ -24,11 +24,15 @@
 #include "JitTest.hpp"
 #include "jitbuilder_compiler.hpp"
 
-template <typename ValType>
-using IfxcmpgeReductionParamType = std::tuple<ValType, ValType, int32_t (*)(ValType, ValType)>;
+// TODO: This kind of indirection requires C++11 features and is nontrivial to emulate without 
+//        complicating the code.
+//       We should eventually turn this back on and modify the function signatures, once we 
+//        move to C++11 supported compilers 
+//template <typename ValType>
+//using IfxcmpgeReductionParamType = std::tuple<ValType, ValType, int32_t (*)(ValType, ValType)>;
 
 template <typename ValType>
-class IfxcmpgeReductionTest : public ::testing::TestWithParam<IfxcmpgeReductionParamType<ValType>>
+class IfxcmpgeReductionTest : public ::testing::TestWithParam<std::tuple<ValType, ValType, int32_t (*)(ValType, ValType)>>
    {
    public:
 
@@ -68,7 +72,7 @@ struct IfxcmpgeReductionParamStruct
  *     Given an instance of IfxcmpgeReductionParamType, returns an equivalent instance of IfxcmpgeReductionParamStruct.
  */
 template <typename ValType>
-IfxcmpgeReductionParamStruct<ValType> to_struct(IfxcmpgeReductionParamType<ValType> param)
+IfxcmpgeReductionParamStruct<ValType> to_struct(std::tuple<ValType, ValType, int32_t (*)(ValType, ValType)> param)
    {
    IfxcmpgeReductionParamStruct<ValType> s;
 
@@ -105,15 +109,15 @@ TEST_P(Int8ReductionTest, Reduction)
          "      (band"
          "        (i2b"
          "          (iload parm=0) )"
-         "        (bconst %s) )"
-         "      (bconst %s) ) )"
+         "        (bconst %d) )"
+         "      (bconst %d) ) )"
          "  (block name=\"f\""
          "    (ireturn (iconst 0) ) )"
          "  (block name=\"t\""
          "    (ireturn (iconst 1) ) ) )",
 
-         std::to_string(param.val2).c_str(), // value of and const
-         std::to_string(param.val2).c_str()  // value of the of the if const
+         param.val2, // value of and const
+         param.val2  // value of the of the if const
          );
 
    auto trees = parseString(inputTrees);
@@ -149,15 +153,15 @@ TEST_P(UInt8ReductionTest, Reduction)
          "      (band"
          "        (i2b"
          "          (iload parm=0) )"
-         "        (bconst %s) )"
-         "      (bconst %s) ) )"
+         "        (bconst %d) )"
+         "      (bconst %d) ) )"
          "  (block name=\"f\""
          "    (ireturn (iconst 0) ) )"
          "  (block name=\"t\""
          "    (ireturn (iconst 1) ) ) )",
 
-         std::to_string(param.val2).c_str(), // value of and const
-         std::to_string(param.val2).c_str()  // value of the of the if const
+         param.val2, // value of and const
+         param.val2  // value of the of the if const
          );
 
    auto trees = parseString(inputTrees);
@@ -193,15 +197,15 @@ TEST_P(Int16ReductionTest, Reduction)
          "      (sand"
          "        (i2s"
          "          (iload parm=0) )"
-         "        (sconst %s) )"
-         "      (sconst %s) ) )"
+         "        (sconst %d) )"
+         "      (sconst %d) ) )"
          "  (block name=\"f\""
          "    (ireturn (iconst 0) ) )"
          "  (block name=\"t\""
          "    (ireturn (iconst 1) ) ) )",
 
-         std::to_string(param.val2).c_str(), // value of and const
-         std::to_string(param.val2).c_str()  // value of the of the if const
+         param.val2, // value of and const
+         param.val2  // value of the of the if const
          );
 
    auto trees = parseString(inputTrees);
@@ -237,15 +241,15 @@ TEST_P(UInt16ReductionTest, Reduction)
          "      (sand"
          "        (i2s"
          "          (iload parm=0) )"
-         "        (sconst %s) )"
-         "      (sconst %s) ) )"
+         "        (sconst %d) )"
+         "      (sconst %d) ) )"
          "  (block name=\"f\""
          "    (ireturn (iconst 0) ) )"
          "  (block name=\"t\""
          "    (ireturn (iconst 1) ) ) )",
 
-         std::to_string(param.val2).c_str(), // value of and const
-         std::to_string(param.val2).c_str()  // value of the of the if const
+         param.val2, // value of and const
+         param.val2  // value of the of the if const
          );
 
    auto trees = parseString(inputTrees);
@@ -280,15 +284,15 @@ TEST_P(Int32ReductionTest, Reduction)
          "    (ificmpge target=\"t\""
          "      (iand"
          "        (iload parm=0)"
-         "        (iconst %s) )"
-         "      (iconst %s) ) )"
+         "        (iconst %d) )"
+         "      (iconst %d) ) )"
          "  (block name=\"f\""
          "    (ireturn (iconst 0) ) )"
          "  (block name=\"t\""
          "    (ireturn (iconst 1) ) ) )",
 
-         std::to_string(param.val2).c_str(), // value of and const
-         std::to_string(param.val2).c_str()  // value of the of the if const
+         param.val2, // value of and const
+         param.val2  // value of the of the if const
          );
 
    auto trees = parseString(inputTrees);
@@ -323,15 +327,15 @@ TEST_P(UInt32ReductionTest, Reduction)
          "    (ifiucmpge target=\"t\""
          "      (iand"
          "        (iload parm=0)"
-         "        (iconst %s) )"
-         "      (iconst %s) ) )"
+         "        (iconst %d) )"
+         "      (iconst %d) ) )"
          "  (block name=\"f\""
          "    (ireturn (iconst 0) ) )"
          "  (block name=\"t\""
          "    (ireturn (iconst 1) ) ) )",
 
-         std::to_string(param.val2).c_str(), // value of and const
-         std::to_string(param.val2).c_str()  // value of the of the if const
+         param.val2, // value of and const
+         param.val2  // value of the of the if const
          );
 
    auto trees = parseString(inputTrees);
@@ -366,15 +370,15 @@ TEST_P(Int64ReductionTest, Reduction)
          "    (iflcmpge target=\"t\""
          "      (land"
          "        (lload parm=0)"
-         "        (lconst %s) )"
-         "      (lconst %s) ) )"
+         "        (lconst %lld) )"
+         "      (lconst %lld) ) )"
          "  (block name=\"f\""
          "    (ireturn (iconst 0) ) )"
          "  (block name=\"t\""
          "    (ireturn (iconst 1) ) ) )",
 
-         std::to_string(param.val2).c_str(), // value of and const
-         std::to_string(param.val2).c_str()  // value of the of the if const
+         param.val2, // value of and const
+         param.val2  // value of the of the if const
          );
 
    auto trees = parseString(inputTrees);
@@ -409,15 +413,15 @@ TEST_P(UInt64ReductionTest, Reduction)
          "    (iflucmpge target=\"t\""
          "      (land"
          "        (lload parm=0)"
-         "        (lconst %s) )"
-         "      (lconst %s) ) )"
+         "        (lconst %llu) )"
+         "      (lconst %llu) ) )"
          "  (block name=\"f\""
          "    (ireturn (iconst 0) ) )"
          "  (block name=\"t\""
          "    (ireturn (iconst 1) ) ) )",
 
-         std::to_string(param.val2).c_str(), // value of and const
-         std::to_string(param.val2).c_str()  // value of the of the if const
+         param.val2, // value of and const
+         param.val2  // value of the of the if const
          );
 
    auto trees = parseString(inputTrees);

@@ -46,20 +46,27 @@ namespace TRTest
  * returns the expected return value of the opcode test when given the input
  * values from the first part of the outer tuple.
  */
-template <typename Ret, typename... Args>
-using ParamType = std::tuple<std::tuple<Args...>, std::tuple<std::string, Ret (*)(Args...)> >;
+
+// TODO: This is a great idea but unfortunately requires C++11 support. Emulating the same 
+//        behaviour without the required C++11 features is nontrivial and only has the opposite
+//         effect in complicating the code further. Hence this has been commented out.
+//       We should eventually turn this back on, once we move to C++11 supported compilers 
+//        (while also sifting through the Test Instances and using lambdas where appropriate).
+
+//template <typename Ret, typename... Args>
+//using ParamType = std::tuple<std::tuple<Args...>, std::tuple<std::string, Ret (*)(Args...)> >;
 
 /**
  * @brief Type for holding argument to parameterized binary opcode tests
  */
-template <typename Ret, typename Left, typename Right>
-using BinaryOpParamType = ParamType<Ret, Left, Right>;
 
-/**
- * @brief Struct equivalent to the BinaryOpParamType tuple
- *
- * Used for easier unpacking of test argument.
- */
+//template <typename Ret, typename Left, typename Right>
+//using BinaryOpParamType = ParamType<Ret, Left, Right>;
+
+
+
+// TODO: Once the above has been done we should modify the function signatures appropriately.
+
 template <typename Ret, typename Left, typename Right>
 struct BinaryOpParamStruct {
         Left lhs;
@@ -73,7 +80,7 @@ struct BinaryOpParamStruct {
  *    of BinaryOpParamStruct
  */
 template <typename Ret, typename Left, typename Right>
-BinaryOpParamStruct<Ret, Left, Right> to_struct(BinaryOpParamType<Ret, Left, Right> param) {
+BinaryOpParamStruct<Ret, Left, Right> to_struct(std::tuple<std::tuple<Left,Right>, std::tuple<std::string, Ret (*)(Left,Right)>> param) {
     BinaryOpParamStruct<Ret, Left, Right> s;
     s.lhs = std::get<0>(std::get<0>(param));
     s.rhs = std::get<1>(std::get<0>(param));
@@ -85,10 +92,10 @@ BinaryOpParamStruct<Ret, Left, Right> to_struct(BinaryOpParamType<Ret, Left, Rig
 //~ Opcode test fixtures ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 template <typename Ret, typename... Args>
-class OpCodeTest : public JitTest, public ::testing::WithParamInterface<ParamType<Ret, Args...>> {};
+class OpCodeTest : public JitTest, public ::testing::WithParamInterface< std::tuple<std::tuple<Args...>, std::tuple<std::string, Ret (*)(Args...)>> > {};
 
 template <typename T>
-class BinaryOpTest : public JitTest, public ::testing::WithParamInterface<BinaryOpParamType<T,T,T>> {};
+class BinaryOpTest : public JitTest, public ::testing::WithParamInterface< std::tuple< std::tuple<T,T>, std::tuple<std::string, T (*)(T,T)>> > {};
 
 } // namespace CompTest
 
