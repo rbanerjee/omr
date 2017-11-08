@@ -51,7 +51,7 @@ TR::ILValidator::validate()
        {
        // CLEAN_UP: Kind of subtle but Iterators can only be used if the IL is
        //           Sound. And Soundness Check is therefore our first method_rule.
-       int32_t ret = (*it)->validate(comp, this);
+       int32_t ret = (*it)->validate(comp()->getMethodSymbol());
        if (ret)
 	  return ret;
        }
@@ -64,7 +64,7 @@ TR::ILValidator::validate()
             nodeIter.currentTree(); ++nodeIter)
 	   {
 	   // CLEAN_UP: TRACE Message which Node upon which rule failed.
-	   int32_t ret = (*it)->validate(nodeIter.currentNode(), this);
+	   int32_t ret = (*it)->validate(nodeIter.currentNode());
 	   if (ret)
 	      return ret;
 	   }
@@ -78,6 +78,7 @@ TR::ILValidator::validate()
 	   if (iter->getOpCodeValue() == TR::BBEnd)
 	      // CLEAN_UP: This might need the use of fancy iterators.
 	      //           End of block validation can still be done here I think. Not sure.
+              // FIX_THIS: no need to pass *this*.
 	      int32_t ret = (*it)->validate(nodeIter.currentNode(), this);
 	      if (ret)
 		 return ret;
