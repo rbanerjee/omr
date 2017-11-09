@@ -21,18 +21,12 @@
 
 #include "ras/ILValidatorUtils.hpp"
 
-#include <stdarg.h>
+#include <stdarg.h>                                   // for va_list
 
-
-// CLEAN_UP: I might have some extra ones here. Take them eventually.
-#include "il/DataTypes.hpp"
-#include "il/Node.hpp"
-#include "il/Node_inlines.hpp"
+#include "il/Node.hpp"                                // for Node
+#include "il/Node_inlines.hpp"                        // for Node::getChild, etc
 #include "il/ILProps.hpp"
-#include "il/ILOps.hpp"
-#include "il/Block.hpp"
-#include "il/Block_inlines.hpp"
-#include "infra/Assert.hpp"
+#include "il/ILOps.hpp"                               // for TR::ILOpCode
 
 
 #if defined(DEBUG) || defined(PROD_WITH_ASSUMES)
@@ -74,7 +68,6 @@ void TR::checkCondition(TR::Node *node, bool condition,
       }
    }
 
-// CLEAN_UP: Maybe make it the ref constant.
 void TR::updateNodeState(TR::Node *node,
                          NodeSideTable<NodeState>  &nodeStates,
                          LiveNodeWindow &liveNodes, TR::Compilation *comp)

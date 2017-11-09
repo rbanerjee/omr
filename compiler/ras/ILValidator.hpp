@@ -23,6 +23,8 @@
 #define ILVALIDATOR_HPP
 
 namespace TR { class Compilation; }
+namespace TR { class MethodValidationRules; }
+namespace TR { class NodeValidationRules; }
 
 namespace TR {
 
@@ -30,8 +32,7 @@ class ILValidator
    {
    public:
    ILValidator(TR::Compilation *comp);
-
-   ILValidator(TR::Compilation *comp);
+   ~ILValidator();
 
    // Validate via the provided rules.
    // CLEAN_UP: Provide a BETTER description as to what this does.
@@ -41,23 +42,22 @@ class ILValidator
    TR::Compilation  *_comp;
    TR::Compilation *comp();
    // CLEAN_UP: The Validation rules are categorized into three types
-   //           based on the "scope" required to verify them.
-   //           As in, a MethodValidationRule would require information
+   //           based on the "scope" required to validate them.
+   //           For example, a MethodValidationRule would require information
    //           about the entire Method (encapsulated as a TR::ResolvedMethodSymbol)
    //           in order to find out if the IL satisifies the given condition.
    //           Whereas a NodeValidationRule checks whether a particular TR::Node has some
    //           property. Meaning a NodeValidationRule doesn't need to keep track of 
    //           already encountered nodes or peek into other blocks to see whether a particular
    //           Node is valid or not.
-   // CLEAN_UP: Note that currently we don't have any rules that require us to set up
-   //           a scope which encompasses only one particular block. However I can't
-   //           really see why something like this wouldn't exist in the future. Specially
-   //           once we start to add more complicated ones. Also, it's viable to check
-   //           "User defined" using the ILValidator class. A set of utilities is provided to 
-   //           make this process easier in the form of ILValidationUtils. 
-   std::vector<TR::MethodValidationRule> method_rules;
+   std::vector<TR::MethodValidationRule *> method_rules;
+   // CLEAN_UP: Note, currently none of the rules confine themselves to look at just one
+   //           particular block. (We might choose to rewrite some of the existing 
+   //           ones to do just that, essentially splitting up the work.)
+   //           However it's not hard to imagine cases where we would want "Block Level" validation. 
+   //           This also leaves the opportunity for such "User defined" Block Level Rules.
 //   std::vector<TR::BlockValidationRule> block_rules;
-   std::vector<TR::NodeValidationRule> node_rules;
+   std::vector<TR::NodeValidationRule *> node_rules;
    };
 
 }

@@ -19,10 +19,16 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  *******************************************************************************/
 
-#ifndef ILVALIDATOR_UTILS_HPP
-#define ILVALIDATOR_UTILS_HPP
+#ifndef ILVALIDATION_UTILS_HPP
+#define ILVALIDATION_UTILS_HPP
 
-#include "infra/ILWalk.hpp"
+// CLEAN_UP: Double check to see if this good.
+#include "compile/Compilation.hpp"             // for  Compilation, etc
+#include "infra/Assert.hpp"                    // for  TR_ASSERT
+#include "il/Node.hpp"                         // for  Node
+#include "infra/SideTable.hpp"                 // for  NodeSideTable
+
+namespace TR { class Compilation; }
 
 namespace TR {
 
@@ -147,15 +153,5 @@ void checkCondition(TR::Node *node, bool condition, TR::Compilation *comp,
 void printDiagnostic(TR::Compilation *comp, const char *formatStr, ...);
 void vprintDiagnostic(TR::Compilation *comp, const char *formatStr, va_list ap);
 
-// Each of the rules must define their own instances of these. For using Vprint...
-//  and UpdateNodeState.
-//NodeSideTable<NodeState>  _nodeStates;
-//LiveNodeWindow            _liveNodes;
-//   ,_nodeStates(comp->trMemory())
-//   ,_liveNodes(_nodeStates, comp->trMemory())
-
-// Put isLogginEnabled() inside some of the Rules/Validator as well.
-// bool isLoggingEnabled(); 
-// END_API
 }
-#endif // ILVALIDATOR_UTIL_HPP
+#endif // ILVALIDATION_UTIL_HPP

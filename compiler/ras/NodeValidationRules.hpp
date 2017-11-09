@@ -22,18 +22,18 @@
 /**
  * @file
  *
- * This file contains classes that specify certain rules
- * that the base Validator class can use to validate the given IL.
- * The helpers defined in ILValidatorHelpers.hpp further help to extend
- * this functionality. For example, AllILValidators can be used to
- * test for a specific subset of the rules provided here, along with any
- * newly defined constraints one would want to test with.
+ * This file contains classes that specify certain Validation rules
+ * that the ILValidator class can then use to validate the given IL.
+ * The utilities for writing generic ValidationRules are provided
+ * in ILValidationUtils.hpp. 
  */
 
-#ifndef ILValidatorCompletenessRules_hpp
-#define ILValidatorCompletenessRules_hpp
+#ifndef NODEVALIDATIONRULES_HPP
+#define NODEVALIDATIONRULES_HPP
 
 #include "ras/ILValidationUtils.hpp"
+
+#include "il/DataTypes.hpp"                           // for TR::DataType, etc
 
 namespace TR {
 
@@ -41,19 +41,19 @@ class NodeValidationRule
    {
    public:
    /**
-    * Verify the node of a method has certain properties.
+    * Verify the node(TR::Node) of a method has certain properties.
     *
     * @return 0 on success, or a non-zero error code. If non-zero is returned,
     * compilation stops.
     */
    // CLEAN_UP: As things stand, there's really no point in returning an int32_t.
-   //           Since the ones I'm defining now all take advantage of ILValidationUtils.
+   //           Since the ones defined here all take advantage of ILValidationUtils.
    //           Note that TR::checkCondition is guranteed to FAIL() under a certain protocol
    //           (which is defined in ILValidationUtils.cpp) if the `condition` is not fulfilled.
    //           So as long as this function returns, the node upholds the given rule.
    //           Therefore we could very well make it a boolean or even a void function.
    //           BUT there is a case to be made for future NodeValidationRules that don't use
-   //           the utilities defined in ILValidatorUtils.cpp. In which case they might
+   //           the utilities defined in ILValidationUtils. In which case they might
    //           choose to use error codes for specific scenerios (personally I'm not a big
    //           fan of doing things that way, specially since there are much better alternatives in
    //           this case).

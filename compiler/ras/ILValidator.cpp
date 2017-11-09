@@ -21,17 +21,11 @@
 
 #include "ras/ILValidator.hpp"
 
-// CLEAN_UP: See if you need all of these. Almost certain that
-//           I don't need most of these.
-#include "il/DataTypes.hpp"
-#include "il/Node.hpp"
-#include "il/Node_inlines.hpp"
-#include "il/ILProps.hpp"
-#include "il/ILOps.hpp"
-#include "il/Block.hpp"
-#include "il/Block_inlines.hpp"
-#include "infra/Assert.hpp"
+#include <algorithm>                           // for std::for_each
 
+#include "compile/Compilation.hpp"             // for Compilation
+#include "ras/MethodValidationRules"           // for MethodValidationRules
+#include "ras/NodeValidationRules"             // for NodeValidationRules
 
 TR::ILValidator::ILValidator(TR::Compilation *comp)
    :_comp(comp)
@@ -39,59 +33,73 @@ TR::ILValidator::ILValidator(TR::Compilation *comp)
    // Initialize the List of rules here. Via creating a new clever constructor.
    }
 
+
+
+template <typename T> static
+void delete_pointed_object(T* const ptr) {
+    delete ptr;
+}
+
+
+TR::ILValidator::~ILValidator()
+   :_comp(comp)
+   {
+   // CLEAN_UP: Somewhat crude. We can probably do better.
+   std::for_each(method_rules.begin(), method_rules.end(),
+                     delete_pointed_object<TR::MethodValidationRule>);
+   std::for_each(node_rules.begin(), node_rules.end(),
+                     delete_pointed_object<TR::NodeValidationRule>);
+   // TODO: We would probably want to do the same as above for block_rules.
+/*
+   std::for_each(validators.begin(), validators.end(),
+                     delete_pointed_object<TR::MethodValidationRule>);
+*/
+   }
+
 TR::Compilation *TR::ILValidator::comp()
    {
    return _comp;
    }
 
-TR::ILValidator::validate()
+bool TR::ILValidator::validate()
    {
-   // CLEAN_UP: Add seperate TRACE messages for each of them.
-
-   // The Rules are guranteed to call "FAIL()" upon encountering
-   // the breach of a specificied rule and exit based on the defined protocol
-   // See: ILValidator.hpp for the definition of FAIL().
+   // TODO: As things are, the Rules are guranteed to call "FAIL()" upon 
+   //       encountering the breach of a specified rule and exit based on the defined protocol.
+   //       See: ILValidationUtils.cpp for the definition of FAIL().
+   //       We might eventually choose to not Abort and report associated failures.
+   //       (If the IL is unsound then it's almost always a good idea to Abort immediately.)
 
    // Validation is performed across the entire compilation unit.
    for (auto it = method_rules.begin(); it != method_rules.end(); ++it) 
        {
-       // CLEAN_UP: Iterators can only be used if the IL is
-       //           Sound. And therefore it makes sense for the Soundness checks
-       //           to be a MethodValidator.
        int32_t ret = (*it)->validate(comp()->getMethodSymbol());
        if (ret)
 	  return ret;
        }
-   // CLEAN_UP: Node Validation rules only check per node for a specific property.
+   // NodeValidationRules only check per node for a specific property.
    for (auto it = node_rules.begin(); it != node_rules.end(); ++it) 
        {
-       // CLEAN_UP: Traverse the IL and call verify on each of the nodes. 
-       //           No need to use the custom iterator class.
        for (TR::PreorderNodeIterator nodeIter(comp()->getFirstTreeTop(), comp(), "NODE_VALIDATOR");
             nodeIter.currentTree(); ++nodeIter)
 	   {
-	   // CLEAN_UP: TRACE Message which Node upon which rule failed.
 	   int32_t ret = (*it)->validate(nodeIter.currentNode());
 	   if (ret)
 	      return ret;
 	   }
        }
-   // CLEAN_UP: Currently we don't have rules that is scoped under a particular
-   //           TR::Block.
+   // TODO: Add the same functionality for "BlockValidationRules". In the event we
+   //       we choose to implement them. 
 /*
-   // Checks performed across a particular block.
+   // Checks performed across a particular extended block.
    for (auto it = block_rules.begin(); it != block_rules.end(); ++it)
        {
        for (TR::PostorderNodeOccurrenceIterator nodeIter(start, comp(), "BLOCK_VALIDATOR");
             nodeIter.currentTree(); ++nodeIter)
-	   {
+          {
             bool isEndOfExtendedBlock = false;
             TR::TreeTop *nextTree = iter.currentTree()->getNextTreeTop();
             if (nextTree)
                {
-               // CLEAN_UP: Small nit, but we could probably move this check somewhere else.
-//               checkCondition(node, nextTree->getNode()->getOpCodeValue() == TR::BBStart,
-//                              _comp, "Expected BBStart after BBEnd");
                isEndOfExtendedBlock = ! nextTree->getNode()->getBlock()->isExtensionOfPreviousBlock();
                }
             else
@@ -104,8 +112,10 @@ TR::ILValidator::validate()
                (*it)->validate(nodeIter); // Maybe be pass the START and END nodes for the block.
           }
 
-       }
+      }
 */
+
+
    return true;
    }
 

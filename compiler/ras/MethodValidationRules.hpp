@@ -19,25 +19,22 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  *******************************************************************************/
 
-// CLEAN_UP: update the file description.
 /**
  * @file
  *
- * This file contains classes that specify certain rules
- * that the base Validator class can use to validate the given IL.
- * The helpers defined in ILValidatorHelpers.hpp further help to extend
- * this functionality. For example, AllILValidators can be used to
- * test for a specific subset of the rules provided here, along with any
- * newly defined constraints one would want to test with.
+ * This file contains classes that specify certain Validation rules
+ * that the ILValidator class can then use to validate the given IL.
+ * The utilities for writing generic ValidationRules are provided
+ * in ILValidationUtils.hpp. 
  */
 
-#ifndef ILValidatorCompletenessRules_hpp
-#define ILValidatorCompletenessRules_hpp
+#ifndef METHODVALIDATIONRULES_HPP
+#define METHODVALIDATIONRULES_HPP
 
 #include "ras/ILValidationUtils.hpp"
 
-// CLEAN_UP: This should be enough. Probably don't even need this.
-namespace TR { class ResolvedMethodSymbol; }
+
+#include "il/symbol/ResolvedMethodSymbol.hpp"        // for ResolvedMethodSymbol
 
 namespace TR {
 
@@ -45,19 +42,19 @@ class MethodValidationRule
    {
    public:
    /**
-    * Verify the node of a method has certain properties.
+    * Verify that the IL for method(ResolvedMethodSymbol) has certain properties.
     *
     * @return 0 on success, or a non-zero error code. If non-zero is returned,
     * compilation stops.
     */
    // CLEAN_UP: As things stand, there's really no point in returning an int32_t.
-   //           Since the ones I'm defining now all take advantage of ILValidationUtils.
+   //           Since the ones defined here all take advantage of ILValidationUtils.
    //           Note that TR::checkCondition is guranteed to FAIL() under a certain protocol
    //           (which is defined in ILValidationUtils.cpp) if the `condition` is not fulfilled.
    //           So as long as this function returns, the node upholds the given rule.
    //           Therefore we could very well make it a boolean or even a void function.
    //           BUT there is a case to be made for future NodeValidationRules that don't use
-   //           the utilities defined in ILValidatorUtils.cpp. In which case they might
+   //           the utilities defined in ILValidationUtils. In which case they might
    //           choose to use error codes for specific scenerios (personally I'm not a big
    //           fan of doing things that way, specially since there are much better alternatives in
    //           this case).
@@ -163,7 +160,6 @@ class SoundnessRule : public MethodValidationRule
 	 TR::vprintDiagnostic(_comp, formatStr, args);
 	 va_end(args);
 	 TR::printDiagnostic(_comp, "\n");
-         // CLEAN_UP: This needs to be fixed eventually. I'm not fond of the FAIL macro.
 	 FAIL();
 	 }
       }
@@ -207,7 +203,8 @@ class ValidateLivenessBoundaries : public TR::MethodValidationRule
 	    TR::TreeTop *nextTree = iter.currentTree()->getNextTreeTop();
 	    if (nextTree)
 	       {
-               // CLEAN_UP: Small nit, but we could probably move this check somewhere else.
+               // CLEAN_UP: Small nit, but I probably should put this check somewhere
+               //           else since it is not directly related to Liveness Boundaries.
 	       checkCondition(node, nextTree->getNode()->getOpCodeValue() == TR::BBStart,
                               _comp, "Expected BBStart after BBEnd");
 	       isEndOfExtendedBlock = ! nextTree->getNode()->getBlock()->isExtensionOfPreviousBlock();
