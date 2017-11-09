@@ -27,33 +27,65 @@
 #include "ras/MethodValidationRules"           // for MethodValidationRules
 #include "ras/NodeValidationRules"             // for NodeValidationRules
 
-TR::ILValidator::ILValidator(TR::Compilation *comp)
+template <typename T, size_t N> static
+T* begin(T(&reqArray)[N]) { return &reqArray[0]; }
+template <typename T, size_t N> static
+T* end(T(&reqArray)[N]) { return &reqArray[0]+N; }
+
+TR::ILValidator::ILValidator(TR::Compilation *comp
+//                             , std::vector<TR::MethodValidationRule *> methodValidationRules, 
+//                             std::vector<TR::NodeValidationRule *> nodeValidationRules
+//                             , std::vector<TR::NodeValidationRule *> blockValidationRules
+                             )
    :_comp(comp)
    {
-   // Initialize the List of rules here. Via creating a new clever constructor.
+   // TODO: This is heading towards the right direction. But we can
+   //       do a lot better. 
+
+/*
+   _methodValidationRules.reserve(methodValidationRules.size());
+   for (int32_t i = 0; i <= methodValidationRules.size(); ++i)
+      {
+      _methodValidationRules[i] = methodValidationRules[i];
+      }
+   _nodeValidationRules.reserve(nodeValidationRules.size());
+   for (int32_t i = 0; i <= nodeValidationRules.size(); ++i)
+      {
+      _methodValidationRules[i] = methodValidationRules[i];
+      }
+*/
+     // CLEAN_UP: For testing purposes, we can just do this for now.
+     MethodValidationRule *temp_method_rules = { new SoundnessRule(_comp),
+                                                 new ValidateLivenessBoundaries(_comp) };
+     NodeValidationRule *temp_node_rules = { new ValidateChildCount(_comp),
+                                             new ValidateChildTypes(_comp),
+                                             new Validate_ireturnReturnType(_comp) }
+     _methodValidationRules.assign(begin(temp_method_rules), end(temp_method_rules));
+     _nodeValidationRules.assign(begin(temp_node_rules), end(temp_node_rules));
    }
 
 
 
 template <typename T> static
-void delete_pointed_object(T* const ptr) {
+void delete_pointed_object(T* const ptr) 
+   {
     delete ptr;
-}
+   }
 
 
+// TODO: Not sure who should take care of the freeing of these Rule Objects.
+//       Enable this if we want the ILValidator to do itself.
 TR::ILValidator::~ILValidator()
-   :_comp(comp)
    {
    // CLEAN_UP: Somewhat crude. We can probably do better.
-   std::for_each(method_rules.begin(), method_rules.end(),
+   //           Something like std::unique_ptr should do the trick.
+   std::for_each(_methodValidationRules.begin(), _methodValidationRules.end(),
                      delete_pointed_object<TR::MethodValidationRule>);
    std::for_each(node_rules.begin(), node_rules.end(),
                      delete_pointed_object<TR::NodeValidationRule>);
    // TODO: We would probably want to do the same as above for block_rules.
-/*
-   std::for_each(validators.begin(), validators.end(),
-                     delete_pointed_object<TR::MethodValidationRule>);
-*/
+//   std::for_each(validators.begin(), validators.end(),
+//                     delete_pointed_object<TR::MethodValidationRule>);
    }
 
 TR::Compilation *TR::ILValidator::comp()
@@ -63,21 +95,21 @@ TR::Compilation *TR::ILValidator::comp()
 
 bool TR::ILValidator::validate()
    {
-   // TODO: As things are, the Rules are guranteed to call "FAIL()" upon 
+   // TODO: As things stand, the Rules are guranteed to call "FAIL()" upon
    //       encountering the breach of a specified rule and exit based on the defined protocol.
    //       See: ILValidationUtils.cpp for the definition of FAIL().
    //       We might eventually choose to not Abort and report associated failures.
    //       (If the IL is unsound then it's almost always a good idea to Abort immediately.)
 
    // Validation is performed across the entire compilation unit.
-   for (auto it = method_rules.begin(); it != method_rules.end(); ++it) 
+   for (auto it = _methodValidationRules.begin(); it != _methodValidationRules.end(); ++it) 
        {
        int32_t ret = (*it)->validate(comp()->getMethodSymbol());
        if (ret)
 	  return ret;
        }
    // NodeValidationRules only check per node for a specific property.
-   for (auto it = node_rules.begin(); it != node_rules.end(); ++it) 
+   for (auto it = _nodeValidationRules.begin(); it != _nodeValidationRules.end(); ++it) 
        {
        for (TR::PreorderNodeIterator nodeIter(comp()->getFirstTreeTop(), comp(), "NODE_VALIDATOR");
             nodeIter.currentTree(); ++nodeIter)

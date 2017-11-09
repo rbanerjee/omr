@@ -50,14 +50,14 @@ class ILValidator
    //           property. Meaning a NodeValidationRule doesn't need to keep track of 
    //           already encountered nodes or peek into other blocks to see whether a particular
    //           Node is valid or not.
-   std::vector<TR::MethodValidationRule *> method_rules;
+   std::vector<TR::MethodValidationRule *> _methodValidationRules;
    // CLEAN_UP: Note, currently none of the rules confine themselves to look at just one
    //           particular block. (We might choose to rewrite some of the existing 
    //           ones to do just that, essentially splitting up the work.)
    //           However it's not hard to imagine cases where we would want "Block Level" validation. 
    //           This also leaves the opportunity for such "User defined" Block Level Rules.
-//   std::vector<TR::BlockValidationRule> block_rules;
-   std::vector<TR::NodeValidationRule *> node_rules;
+//   std::vector<TR::BlockValidationRule> _blockValidationRules;
+   std::vector<TR::NodeValidationRule *> _nodeValidationRules;
    };
 
 }
