@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 IBM Corp. and others
+ * Copyright (c) 2017, 2017 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -33,20 +33,7 @@
 
 #include "ras/ILValidationUtils.hpp"
 
-
-#include "il/Block.hpp"                              // for TR::Block
-#include "il/symbol/ResolvedMethodSymbol.hpp"        // for ResolvedMethodSymbol
-#include "infra/Checklist.hpp"                       // for NodeChecklist
-#include "infra/ILWalk.hpp"                          // for PostorderNodeOccurrenceIterator
-
-
-// CLEAN_UP: There is probably a better way of doing this.
-#if defined(DEBUG) || defined(PROD_WITH_ASSUMES)
-#define ABORT() TR::trap()
-#else
-#define ABORT() comp->failCompilation<TR::CompilationException>("Validation error: IL is unsound")
-#endif
-#define FAIL() if (!feGetEnv("TR_continueAfterValidationError")) ABORT()
+namespace TR { class NodeChecklist; }
 
 
 namespace TR {
@@ -75,107 +62,27 @@ class MethodValidationRule
    };
 
 
-
+// TODO: Even though the Rule(class) names are somewhat "self explanatory",
+//       we might still want to formally define each of these rules.
+//       And if we want these definitions to live with the code, then
+//       this seems like a good place to do that.
+//       (Another option would be to create a doc on github for these, but I can
+//        justify providing a brief description here as well.)
 class SoundnessRule : public MethodValidationRule
    {
    TR::Compilation  *_comp;
 
    public:
+   SoundnessRule(TR::Compilation *comp);
+   int32_t validate(TR::ResolvedMethodSymbol *methodSymbol);
 
-   SoundnessRule(TR::Compilation *comp)
-   : _comp(comp)
-   {
-   }
-
-   int32_t validate(TR::ResolvedMethodSymbol *methodSymbol)
-      {
-      TR::TreeTop *start = methodSymbol->getFirstTreeTop(); 
-      TR::TreeTop *stop = methodSymbol->getLastTreeTop();
-      checkSoundnessCondition(start, start != NULL, "Start tree must exist");
-      checkSoundnessCondition(stop, !stop || stop->getNode() != NULL,
-                    "Stop tree must have a node");
-
-      TR::NodeChecklist treetopNodes(_comp), ancestorNodes(_comp), visitedNodes(_comp);
-
-      // Can't use iterators here, because iterators presuppose that the IL is sound.
-      for (TR::TreeTop *currentTree = start; currentTree != stop;
-           currentTree = currentTree->getNextTreeTop())
-	 {
-	 checkSoundnessCondition(currentTree, currentTree->getNode() != NULL,
-                       "Tree must have a node");
-	 checkSoundnessCondition(currentTree, !treetopNodes.contains(currentTree->getNode()),
-                       "Treetop node n%dn encountered twice", currentTree->getNode()->getGlobalIndex());
-
-	 treetopNodes.add(currentTree->getNode());
-
-	 TR::TreeTop *next = currentTree->getNextTreeTop();
-	 if (next)
-	    {
-	    checkSoundnessCondition(currentTree, next->getNode() != NULL, 
-                                    "Tree after n%dn must have a node", 
-                                    currentTree->getNode()->getGlobalIndex());
-	    checkSoundnessCondition(currentTree, next->getPrevTreeTop() == currentTree, 
-                                   "Doubly-linked treetop list must be consistent: n%dn->n%dn<-n%dn",
-                                    currentTree->getNode()->getGlobalIndex(),
-                                    next->getNode()->getGlobalIndex(),
-                                    next->getPrevTreeTop()->getNode()->getGlobalIndex());
-	    }
-	 else
-	    {
-	    checkSoundnessCondition(currentTree, stop == NULL,
-                                    "Reached the end of the trees after n%dn without encountering the stop tree n%dn",
-                                    currentTree->getNode()->getGlobalIndex(),
-                                    stop? stop->getNode()->getGlobalIndex() : 0);
-	    checkNodeSoundness(currentTree, currentTree->getNode(),
-                               ancestorNodes, visitedNodes);
-	    }
-	 }
-      return 0;
-      }
-
+   private:
    void checkNodeSoundness(TR::TreeTop *location, TR::Node *node,
-                           TR::NodeChecklist &ancestorNodes, TR::NodeChecklist &visitedNodes)
-      {
-      TR_ASSERT(node != NULL, "checkNodeSoundness requires that node is not NULL");
+                           TR::NodeChecklist &ancestorNodes,
+                           TR::NodeChecklist &visitedNodes);
 
-      if (visitedNodes.contains(node))
-	 return;
-      visitedNodes.add(node);
-
-      checkSoundnessCondition(location, !ancestorNodes.contains(node),
-                              "n%dn must not be its own ancestor", 
-                              node->getGlobalIndex());
-      ancestorNodes.add(node);
-
-      for (int32_t i = 0; i < node->getNumChildren(); i++)
-	 {
-	 TR::Node *child = node->getChild(i);
-	 checkSoundnessCondition(location, child != NULL, "n%dn child %d must not be NULL",
-                       node->getGlobalIndex(), i);
-
-	 checkNodeSoundness(location, child, ancestorNodes, visitedNodes);
-	 }
-
-      ancestorNodes.remove(node);
-      }
-
-
-   void checkSoundnessCondition(TR::TreeTop *location, bool condition, const char *formatStr, ...)
-      {
-      if (!condition)
-	 {
-	 if (location && location->getNode())
-	    TR::printDiagnostic(_comp, "*** VALIDATION ERROR: IL is unsound at n%dn ***\nMethod: %s\n", location->getNode()->getGlobalIndex(), _comp->signature());
-	 else
-	    TR::printDiagnostic(_comp, "*** VALIDATION ERROR: IL is unsound ***\nMethod: %s\n", _comp->signature());
-	 va_list args;
-	 va_start(args, formatStr);
-	 TR::vprintDiagnostic(_comp, formatStr, args);
-	 va_end(args);
-	 TR::printDiagnostic(_comp, "\n");
-	 FAIL();
-	 }
-      }
+   void checkSoundnessCondition(TR::TreeTop *location, bool condition,
+                                const char *formatStr, ...);
    };
 
 class ValidateLivenessBoundaries : public TR::MethodValidationRule
@@ -190,68 +97,11 @@ class ValidateLivenessBoundaries : public TR::MethodValidationRule
    TR::LiveNodeWindow            _liveNodes; 
 
    public:
+   ValidateLivenessBoundaries(TR::Compilation *comp);
+   int32_t validate(TR::ResolvedMethodSymbol *methodSymbol);
 
-   ValidateLivenessBoundaries(TR::Compilation *comp)
-   : _comp(comp),
-   _nodeStates(comp->trMemory()),
-   _liveNodes(_nodeStates, comp->trMemory())
-   {
-   }
-
-   int32_t validate(TR::ResolvedMethodSymbol *methodSymbol)
-      {
-      TR::TreeTop *start = methodSymbol->getFirstTreeTop();
-      TR::TreeTop *stop = methodSymbol->getLastTreeTop();
-
-      for (TR::PostorderNodeOccurrenceIterator iter(start, _comp, "VALIDATE_LIVENESS_BOUNDARIES");
-           iter != stop; ++iter)
-         {
-         TR::Node *node = iter.currentNode();
-         TR::updateNodeState(node, _nodeStates, _liveNodes, _comp);
-         if (node->getOpCodeValue() == TR::BBEnd)
-	    {
-	    // Determine whether this is the end of an extended block
-	    //
-	    bool isEndOfExtendedBlock = false;
-	    TR::TreeTop *nextTree = iter.currentTree()->getNextTreeTop();
-	    if (nextTree)
-	       {
-               // CLEAN_UP: Small nit, but I probably should put this check somewhere
-               //           else since it is not directly related to Liveness Boundaries.
-	       checkCondition(node, nextTree->getNode()->getOpCodeValue() == TR::BBStart,
-                              _comp, "Expected BBStart after BBEnd");
-	       isEndOfExtendedBlock = ! nextTree->getNode()->getBlock()->isExtensionOfPreviousBlock();
-	       }
-	    else
-	       {
-	       isEndOfExtendedBlock = true;
-	       }
-
-	    if (isEndOfExtendedBlock)
-               // Ensure there are no nodes live across the end of a block
-	       validateEndOfExtendedBlockBoundary(node);
-	    }
-         }
-      return 0;
-      }
-
-   void validateEndOfExtendedBlockBoundary(TR::Node *node)
-      {
-      for (LiveNodeWindow::Iterator lnwi(_liveNodes); lnwi.currentNode(); ++lnwi)
-         {
-	 checkCondition(node, false, _comp, 
-                        "Node cannot live across block boundary at n%dn",
-                        lnwi.currentNode()->getGlobalIndex());
-         }
-
-      // At the end of an extended block, no node we've already seen could ever be seen again.
-      // Slide the live node window to keep its bitvector compact.
-      if (_liveNodes.isEmpty())
-         {
-	 _liveNodes.startNewWindow();
-         }
-      }
-
+   private:
+   void validateEndOfExtendedBlockBoundary(TR::Node *node);
    };
 
 } // namespace TR

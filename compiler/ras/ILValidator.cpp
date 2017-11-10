@@ -24,6 +24,7 @@
 #include <algorithm>                               // for std::for_each
 
 #include "compile/Compilation.hpp"                 // for Compilation
+#include "infra/ILWalk.hpp"                        // for PostorderNodeOccurrenceIterator
 #include "ras/MethodValidationRules.hpp"           // for MethodValidationRules
 #include "ras/NodeValidationRules.hpp"             // for NodeValidationRules
 
