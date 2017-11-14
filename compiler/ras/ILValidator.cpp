@@ -54,7 +54,8 @@ TR::ILValidator::ILValidator(TR::Compilation *comp)
 
      TR::NodeValidationRule* temp_node_rules[] = { new  TR::ValidateChildCount(_comp),
                                                    new  TR::ValidateChildTypes(_comp),
-                                                   new  TR::Validate_ireturnReturnType(_comp) };
+                                                   new  TR::Validate_ireturnReturnType(_comp),
+                                                   new  TR::Validate_axaddPlatformSpecificRequirement(_comp) };
 
      _methodValidationRules.assign(begin(temp_method_rules), end(temp_method_rules));
      _blockValidationRules.assign(begin(temp_block_rules), end(temp_block_rules));
