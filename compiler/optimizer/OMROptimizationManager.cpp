@@ -40,7 +40,6 @@
 #include "infra/List.hpp"                      // for List
 #include "optimizer/Optimizations.hpp"
 #include "optimizer/Optimizer.hpp"             // for Optimizer
-#include "ras/ILValidator.hpp"                 // for TR::ILValidator
 #include "env/CompilerEnv.hpp"
 
 struct OptimizationStrategy;
@@ -282,12 +281,14 @@ void OMR::OptimizationManager::performChecks()
       {
       if (!self()->comp()->getOption(TR_UseILValidator))
          {
+         // TODO: Remove these calls after the ILValidator is complete.
          self()->comp()->verifyTrees(self()->comp()->getMethodSymbol());
          }
       else
          {
-           TR::ILValidator validator(self()->comp());
-           validator.validate();
+           // TODO: Maybe pass overrides that are specific to a particular
+           //       optimization.
+           self()->comp()->validateIL();
          }
       }
 
