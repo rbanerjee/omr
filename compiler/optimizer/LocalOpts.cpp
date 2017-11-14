@@ -8210,8 +8210,7 @@ TR_ColdBlockMarker::perform()
    static char *validate = feGetEnv("TR_validateBeforeColdBlockMarker");
    if (validate)
       {
-      TR::ILValidator validator(comp());
-      validator.validate();
+      comp()->validateIL();
       }
 
    identifyColdBlocks();

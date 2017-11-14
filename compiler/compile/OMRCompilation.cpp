@@ -93,6 +93,7 @@
 #include "optimizer/TransformUtil.hpp"
 #include "ras/Debug.hpp"                       // for TR_DebugBase
 #include "ras/DebugCounter.hpp"                // for TR_DebugCounterGroup, etc
+#include "ras/ILValidator.hpp"                 // for TR::ILValidator
 #include "ras/IlVerifier.hpp"                  // for TR::IlVerifier
 #include "control/Recompilation.hpp"           // for TR_Recompilation, etc
 #include "runtime/CodeCacheExceptions.hpp"
@@ -224,6 +225,7 @@ OMR::Compilation::Compilation(
    _aliasRegion(heapMemoryRegion),
    _allocatorName(NULL),
    _ilGenerator(0),
+   _ilValidator(NULL),
    _optimizer(0),
    _firstInstruction(NULL),
    _appendInstruction(NULL),
@@ -1017,7 +1019,17 @@ int32_t OMR::Compilation::compile()
          self()->dumpMethodTrees("Initial Trees");
          self()->getDebug()->print(self()->getOutFile(), self()->getSymRefTab());
          }
+
+      // TODO: See if we only should be validating against a subset
+      //       of the existing rules.
+      //       One potential way of doing this would be to pass Enum symbols
+      //       to validateIL in order to specify the state of compilation.
+      self()->validateIL();
+      // TODO: Investigate why we -> Validate the IL if and only if we
+      //       are validating the CFG.
 #ifndef DISABLE_CFG_CHECK
+      // TODO: Once the ILValidator implementation is finished,
+      //       these calls should be removed.
       self()->verifyTrees (_methodSymbol);
       self()->verifyBlocks(_methodSymbol);
 #endif
@@ -1052,6 +1064,10 @@ int32_t OMR::Compilation::compile()
             dumpOptDetails(self(), "failed while verifying compressedRefs anchors\n");
          }
 #endif
+      // TODO: Validate using only a subset of the existing rules.
+      //       The validateIL(..) implementation is not finished yet.
+      // Post Optimization Validation.
+      self()->validateIL();
 
       if (_ilVerifier && _ilVerifier->verify(_methodSymbol))
          {
@@ -1985,6 +2001,17 @@ void OMR::Compilation::switchCodeCache(TR::CodeCache *newCodeCache)
 
       self()->failCompilation<TR::CodeCacheError>("Already committed to current code cache");
       }
+   }
+
+// TODO: Add Enum overrides for this.
+void OMR::Compilation::validateIL()
+   {
+   if (_ilValidator == NULL)
+      self()->failCompilation<TR::CompilationException>("Attempting to validate the IL without the ILValidator being initialized");
+   else
+      // TODO: Pass the overrides to the validate call.
+      //       Maybe check for more ILValidator specific options.
+      _ilValidator->validate();
    }
 
 void OMR::Compilation::verifyTrees(TR::ResolvedMethodSymbol *methodSymbol)

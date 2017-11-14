@@ -96,6 +96,7 @@ namespace TR { class CodeGenerator; }
 namespace TR { class Compilation; }
 namespace TR { class IlGenRequest; }
 namespace TR { class IlVerifier; }
+namespace TR { class ILValidator; }
 namespace TR { class Instruction; }
 namespace TR { class KnownObjectTable; }
 namespace TR { class LabelSymbol; }
@@ -666,6 +667,12 @@ public:
 
    bool getAddressEnumerationOption(TR_CompilationOptions o) {return _options->getAddressEnumerationOption(o);}
 
+   TR::ILValidator *getILValidator() { return _ilValidator; }
+   void setILValidator(TR::ILValidator *ilValidator) { _ilValidator = ilValidator; }
+   // TODO: Add overrides for Enum values so we can validate the IL accordingly.
+   //       As in depending on whether it is right after il-gen, post-optimization or pre-codegen.
+   void validateIL();
+
    void verifyTrees(TR::ResolvedMethodSymbol *s = 0);
    void verifyBlocks(TR::ResolvedMethodSymbol *s = 0);
    void verifyCFG(TR::ResolvedMethodSymbol *s = 0);
@@ -1040,6 +1047,7 @@ private:
 
 
    TR_IlGenerator                    *_ilGenerator;
+   TR::ILValidator                    *_ilValidator;
    TR::Optimizer                      *_optimizer;
    TR::Instruction                    *_firstInstruction;
    TR::Instruction                    *_appendInstruction;
