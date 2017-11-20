@@ -2006,12 +2006,10 @@ void OMR::Compilation::switchCodeCache(TR::CodeCache *newCodeCache)
 // TODO: Add Enum overrides for this.
 void OMR::Compilation::validateIL()
    {
-   if (_ilValidator == NULL)
-      self()->failCompilation<TR::CompilationException>("Attempting to validate the IL without the ILValidator being initialized");
-   else
-      // TODO: Pass the overrides to the validate call.
-      //       Maybe check for more ILValidator specific options.
-      _ilValidator->validate();
+   TR_ASSERT_FATAL(_ilValidator != NULL, "Attempting to validate the IL without the ILValidator being initialized");
+   // TODO: Pass the overrides to the validate call.
+   //       Maybe check for more ILValidator specific options.
+   _ilValidator->validate();
    }
 
 void OMR::Compilation::verifyTrees(TR::ResolvedMethodSymbol *methodSymbol)
