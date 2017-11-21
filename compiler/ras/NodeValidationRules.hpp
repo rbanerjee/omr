@@ -48,17 +48,25 @@ class NodeValidationRule
     * @return 0 on success, or a non-zero error code. If non-zero is returned,
     * compilation stops.
     */
+   // Upon creation, a method Validation is Strict and set to be checked by default.
+   // Note, these choices can be overriden by the associated ILValidationStrategy
+   // specifying the Rule.
+   NodeValidationRule()
+      :_isEnabled(true)
+      ,_isStrictRule(true)
+      {
+      }
    virtual int32_t validate(TR::Node *node) = 0;
+   protected:
+   bool _isEnabled;
+   // For a Strict Rule, compilation aborts upon encountering a failure.
+   // Rules can be set to "Strict" (or "Lenient") depending on the ILValidationStrategy
+   // being employed by the ILValidator.
+   bool _isStrictRule;
    };
 
 
 
-// TODO: Even though the Rule(class) names are somewhat "self explanatory",
-//       we might still want to formally define each of these rules.
-//       And if we want these definitions to live with the code, then
-//       this seems like a good place to do that.
-//       (Another option would be to create a doc on github for these, but I can
-//        justify providing a brief description here as well.)
 class ValidateChildCount : public NodeValidationRule
    {
    TR::Compilation  *_comp;

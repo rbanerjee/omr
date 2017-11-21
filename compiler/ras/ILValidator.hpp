@@ -22,7 +22,10 @@
 #ifndef ILVALIDATOR_HPP
 #define ILVALIDATOR_HPP
 
-#include <vector>                                  // for templated Vectors.
+#include "infra/Flags.hpp"                  // for flags32_t
+#include "ras/ILValidationStrategies.hpp"   // for OMR::ILValidationStrategy, OMR::ILValidationRules etc
+
+#include <vector>                           // for templated Vectors
 
 namespace TR { class BlockValidationRule; }
 namespace TR { class Compilation; }
@@ -38,29 +41,45 @@ class ILValidator
    ILValidator(TR::Compilation *comp);
    ~ILValidator();
 
-   // Validate via the provided rules.
-   // CLEAN_UP: Provide a BETTER description as to what this does.
-   bool validate();
+  // CLEAN_UP: This needs updating.
+  /** \brief
+   *     ...
+   *
+   *  \return
+   *     ...
+   */
+   bool validate(const OMR::ILValidationStrategy *strategy);
 
    private:
    TR::Compilation  *_comp;
    TR::Compilation *comp();
 
-   // The Validation rules are categorized into three types based on the
-   // "scope" required to validate them.
-   // For example, a MethodValidationRule would require information about
-   // the entire Method(encapsulated as a TR::ResolvedMethodSymbol) in order
-   // to find out if the IL satisifies the given condition.
-   // Whereas a NodeValidationRule checks whether a particular TR::Node has
-   // some property. Meaning a NodeValidationRule doesn't need to keep track
-   // of already encountered nodes or peek into other blocks to see whether
-   // a particular Node is valid or not.
+   /**
+    * The Validation rules are categorized into three types based on the
+    *  "scope" required to validate them.
+    */
+
+   /**
+    * A MethodValidationRule would require information about
+    * the entire Method(encapsulated as a TR::ResolvedMethodSymbol) in order
+    * to find out if the IL satisifies the given condition.
+    */
    std::vector<TR::MethodValidationRule *> _methodValidationRules;
+   /**
+    * Used for checking properties across an extended Block.
+    */
    std::vector<TR::BlockValidationRule *> _blockValidationRules;
+   /**
+    * NodeValidationRules check whether a particular TR::Node has
+    * some property. Meaning a NodeValidationRule doesn't need to keep track
+    * of already encountered nodes or peek into other blocks to see whether
+    * a particular Node is valid or not.
+    */
    std::vector<TR::NodeValidationRule *> _nodeValidationRules;
+
    };
 
-TR::ILValidator *createILValidatorObject(TR::Compilation *comp);
+   TR::ILValidator *createILValidatorObject(TR::Compilation *comp);
 
 }
 

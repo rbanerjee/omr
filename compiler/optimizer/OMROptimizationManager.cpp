@@ -277,6 +277,9 @@ void OMR::OptimizationManager::performChecks()
    self()->comp()->reportAnalysisPhase(TR::Optimizer::PERFORMING_CHECKS);
    // From here, down, stack memory allocations will die when the function returns.
    TR::StackMemoryRegion stackMemoryRegion(*(self()->trMemory()));
+   // CLEAN_UP: Instead of doing all of this
+//   self()->comp()->validateIL( ... )
+   //
    if (self()->getVerifyTrees() || self()->comp()->getOption(TR_EnableParanoidOptCheck) || debug("paranoidOptCheck"))
       {
       if (!self()->comp()->getOption(TR_UseILValidator))
@@ -294,6 +297,7 @@ void OMR::OptimizationManager::performChecks()
 
    if (self()->getVerifyBlocks() || self()->comp()->getOption(TR_EnableParanoidOptCheck) || debug("paranoidOptCheck"))
       self()->comp()->verifyBlocks(self()->comp()->getMethodSymbol());
+   //
 
    if (self()->getCheckTheCFG() || self()->comp()->getOption(TR_EnableParanoidOptCheck) || debug("paranoidOptCheck"))
       self()->comp()->verifyCFG(self()->comp()->getMethodSymbol());
