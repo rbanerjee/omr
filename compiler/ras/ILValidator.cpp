@@ -151,3 +151,44 @@ TR::ILValidator* TR::createILValidatorObject(TR::Compilation *comp)
    ilValidator = new (comp->trHeapMemory()) TR::ILValidator(comp);
    return ilValidator;
    }
+
+
+// CLEAN_UP: This is better when trying to specify custom ILValidation strategy.
+/*
+TR::Optimizer *OMR::Optimizer::createOptimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen)
+   {
+   // returns IL optimizer, performs tree-to-tree optimizing transformations.
+   if (isIlGen)
+      return new (comp->trHeapMemory()) TR::Optimizer(comp, methodSymbol, isIlGen, ilgenStrategyOpts);
+
+   if (comp->getOptions()->getCustomStrategy())
+      {
+      if (comp->getOption(TR_TraceOptDetails) || comp->getOption(TR_TraceOptTrees))
+         traceMsg(comp, "Using custom optimization strategy\n");
+
+      // Reformat custom strategy as array of Optimization rather than array of int32_t
+      //
+      int32_t *srcStrategy = comp->getOptions()->getCustomStrategy();
+      int32_t  size        = comp->getOptions()->getCustomStrategySize();
+      OptimizationStrategy *customStrategy = (OptimizationStrategy *)comp->trMemory()->allocateHeapMemory(size * sizeof(customStrategy[0]));
+      for (int32_t i = 0; i < size; i++)
+         {
+         OptimizationStrategy o = { (OMR::Optimizations)(srcStrategy[i] & TR::Options::OptNumMask) };
+         if (srcStrategy[i] & TR::Options::MustBeDone)
+            o._options = MustBeDone;
+         customStrategy[i] = o;
+         }
+
+      return new (comp->trHeapMemory()) TR::Optimizer(comp, methodSymbol, isIlGen, customStrategy);
+      }
+
+   TR::Optimizer *optimizer = new (comp->trHeapMemory()) TR::Optimizer(
+         comp,
+         methodSymbol,
+         isIlGen,
+         TR::Optimizer::optimizationStrategy(comp),
+         TR::Optimizer::valueNumberInfoBuildType());
+
+   return optimizer;
+   }
+*/

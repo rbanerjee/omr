@@ -22,7 +22,9 @@
 #ifndef ILVALIDATOR_HPP
 #define ILVALIDATOR_HPP
 
-#include <vector>                                  // for templated Vectors.
+#include "infra/Flags.hpp"                  // for flags32_t
+
+#include <vector>                           // for templated Vectors.
 
 namespace TR { class BlockValidationRule; }
 namespace TR { class Compilation; }
@@ -42,6 +44,24 @@ class ILValidator
    // CLEAN_UP: Provide a BETTER description as to what this does.
    bool validate();
 
+   enum
+      {
+      soundnessRule                                     = 0x00000001,
+      validateLivenessBoundaries                        = 0x00000002,
+      validateNodeRefCountWithinBlock                   = 0x00000004,
+      validateChildCount                                = 0x00000008,
+      validateChildTypes                                = 0x00000010,
+      // TODO: Add the following commented out ones.
+//      validateBinaryOpcodeChildLayout                   = 0x00000020,
+      validate_ireturnReturnType                        = 0x00000040,
+      validate_axaddPlatformSpecificRequirement         = 0x00000080,
+//      warnAboutDeprecatedOpcodes                        = 0x00000100,
+//      verifyTrees[Maybe]                                       = 0x00000200,
+      };
+
+   // TODO: Add flag setting methods
+
+
    private:
    TR::Compilation  *_comp;
    TR::Compilation *comp();
@@ -58,6 +78,8 @@ class ILValidator
    std::vector<TR::MethodValidationRule *> _methodValidationRules;
    std::vector<TR::BlockValidationRule *> _blockValidationRules;
    std::vector<TR::NodeValidationRule *> _nodeValidationRules;
+
+   flags32_t                 _flags;
    };
 
 TR::ILValidator *createILValidatorObject(TR::Compilation *comp);
