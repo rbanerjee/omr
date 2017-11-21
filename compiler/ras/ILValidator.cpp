@@ -152,43 +152,26 @@ TR::ILValidator* TR::createILValidatorObject(TR::Compilation *comp)
    return ilValidator;
    }
 
-
-// CLEAN_UP: This is better when trying to specify custom ILValidation strategy.
+// WIP:
 /*
-TR::Optimizer *OMR::Optimizer::createOptimizer(TR::Compilation *comp, TR::ResolvedMethodSymbol *methodSymbol, bool isIlGen)
+const TR::ILValidationStrategy *OMR::ILValidator::ILValidationStrategy(TR::Compilation *comp)
    {
-   // returns IL optimizer, performs tree-to-tree optimizing transformations.
-   if (isIlGen)
-      return new (comp->trHeapMemory()) TR::Optimizer(comp, methodSymbol, isIlGen, ilgenStrategyOpts);
-
-   if (comp->getOptions()->getCustomStrategy())
+   // Mock Validation Strategies are used for testing, and override 
+   // the default compilation strategy.
+   // Not sure if I need this right now.
+   if (NULL != OMR::Optimizer::_mockValidationStrategy)
       {
-      if (comp->getOption(TR_TraceOptDetails) || comp->getOption(TR_TraceOptTrees))
-         traceMsg(comp, "Using custom optimization strategy\n");
-
-      // Reformat custom strategy as array of Optimization rather than array of int32_t
-      //
-      int32_t *srcStrategy = comp->getOptions()->getCustomStrategy();
-      int32_t  size        = comp->getOptions()->getCustomStrategySize();
-      OptimizationStrategy *customStrategy = (OptimizationStrategy *)comp->trMemory()->allocateHeapMemory(size * sizeof(customStrategy[0]));
-      for (int32_t i = 0; i < size; i++)
-         {
-         OptimizationStrategy o = { (OMR::Optimizations)(srcStrategy[i] & TR::Options::OptNumMask) };
-         if (srcStrategy[i] & TR::Options::MustBeDone)
-            o._options = MustBeDone;
-         customStrategy[i] = o;
-         }
-
-      return new (comp->trHeapMemory()) TR::Optimizer(comp, methodSymbol, isIlGen, customStrategy);
+      traceMsg(c, "Using mock Validation Strategy %p\n", OMR::ILValidator::_mockValidationStrategy);
+      return OMR::ILValidator::_mockValidationStrategy;
       }
 
-   TR::Optimizer *optimizer = new (comp->trHeapMemory()) TR::Optimizer(
-         comp,
-         methodSymbol,
-         isIlGen,
-         TR::Optimizer::optimizationStrategy(comp),
-         TR::Optimizer::valueNumberInfoBuildType());
+   TR_Hotness strategy = c->getMethodHotness();
+   TR_ASSERT(strategy <= lastOMRStrategy, "Invalid optimization strategy");
 
-   return optimizer;
+   // Downgrade strategy rather than crashing in prod.
+   if (strategy > lastOMRStrategy)
+      strategy = lastOMRStrategy;
+
+   return omrCompilationStrategies[strategy]; // Pass some default.
    }
 */

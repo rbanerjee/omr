@@ -44,6 +44,8 @@ class ILValidator
    // CLEAN_UP: Provide a BETTER description as to what this does.
    bool validate();
 
+// WIP:
+/*
    enum
       {
       soundnessRule                                     = 0x00000001,
@@ -58,8 +60,10 @@ class ILValidator
 //      warnAboutDeprecatedOpcodes                        = 0x00000100,
 //      verifyTrees[Maybe]                                       = 0x00000200,
       };
+*/
 
    // TODO: Add flag setting methods
+//   static const ILValidationStrategy *ilValidationStrategy(TR::Compilation *comp);
 
 
    private:
@@ -79,10 +83,10 @@ class ILValidator
    std::vector<TR::BlockValidationRule *> _blockValidationRules;
    std::vector<TR::NodeValidationRule *> _nodeValidationRules;
 
-   flags32_t                 _flags;
+//   flags32_t                 _flags;
    };
 
-TR::ILValidator *createILValidatorObject(TR::Compilation *comp);
+   TR::ILValidator *createILValidatorObject(TR::Compilation *comp);
 
 }
 

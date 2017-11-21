@@ -31,6 +31,8 @@
 #ifndef NODEVALIDATIONRULES_HPP
 #define NODEVALIDATIONRULES_HPP
 
+#include "ras/ILValidationRule.hpp"   // for OMR::ILValidationRule
+
 #include <stdint.h>                   // for int32_t
 
 namespace TR { class Compilation; }
@@ -39,7 +41,7 @@ namespace TR { class Node; }
 
 namespace TR {
 
-class NodeValidationRule
+class NodeValidationRule : public OMR::ILValidationRule
    {
    public:
    /**

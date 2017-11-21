@@ -31,6 +31,8 @@
 #ifndef METHODVALIDATIONRULES_HPP
 #define METHODVALIDATIONRULES_HPP
 
+#include "ras/ILValidationRule.hpp"   // for OMR::ILValidationRule
+
 #include <stdint.h>                   // for int32_t
 
 namespace TR { class Compilation; }
@@ -42,7 +44,7 @@ namespace TR { class TreeTop; }
 
 namespace TR {
 
-class MethodValidationRule
+class MethodValidationRule : public OMR::ILValidationRule
    {
    public:
    /**

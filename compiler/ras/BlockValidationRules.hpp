@@ -31,6 +31,8 @@
 #ifndef BLOCKVALIDATIONRULES_HPP
 #define BLOCKVALIDATIONRULES_HPP
 
+#include "ras/ILValidationRule.hpp"            // for OMR::ILValidationRule
+
 #include <stdint.h>                            // for int32_t
 
 #include "infra/BitVector.hpp"                 // for TR_BitVector
@@ -41,7 +43,7 @@ namespace TR { class Compilation; }
 
 namespace TR {
 
-class BlockValidationRule
+class BlockValidationRule : public OMR::ILValidationRule
    {
    public:
    /**
