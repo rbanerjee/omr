@@ -24,6 +24,7 @@
 #include <algorithm>                               // for std::for_each
 
 #include "compile/Compilation.hpp"                 // for Compilation
+#include "infra/Assert.hpp"                        // for TR_ASSERT_FATAL
 #include "infra/ILWalk.hpp"                        // for PostorderNodeOccurrenceIterator
 #include "ras/BlockValidationRules.hpp"            // for BlockValidationRules
 #include "ras/MethodValidationRules.hpp"           // for MethodValidationRules
@@ -56,6 +57,9 @@ TR::ILValidator::ILValidator(TR::Compilation *comp)
                                                    new  TR::ValidateChildTypes(_comp),
                                                    new  TR::Validate_ireturnReturnType(_comp),
                                                    new  TR::Validate_axaddPlatformSpecificRequirement(_comp) };
+     // NOTE: Please initialize any new *ILValidationRule here!
+     //       Also ILValidationStrategies.hpp needs to be updated
+     //       everytime a new ILValidation Rule is added.
 
      _methodValidationRules.assign(begin(temp_method_rules), end(temp_method_rules));
      _blockValidationRules.assign(begin(temp_block_rules), end(temp_block_rules));
@@ -71,9 +75,6 @@ void delete_pointed_object(T* const ptr)
 
 TR::ILValidator::~ILValidator()
    {
-   // CLEAN_UP: Somewhat crude. We can probably do better.
-   //           Another solution would be to initialize the *Rule objects
-   //           using trHeapMemeory.
    std::for_each(_methodValidationRules.begin(), _methodValidationRules.end(),
                  delete_pointed_object<TR::MethodValidationRule>);
    std::for_each(_blockValidationRules.begin(), _blockValidationRules.end(),
@@ -89,9 +90,23 @@ TR::Compilation *TR::ILValidator::comp()
    return _comp;
    }
 
-bool TR::ILValidator::validate()
+    
+void TR::extractILValidationStrategyData(const OMR::ILValidationStrategy *strategy,
+                                         std::map<OMR::ILValidationRules,
+                                                  OMR::ILValidationOptions> &validationConfig)
    {
-   // TODO: As things stand, the Rules are guranteed to call "FAIL()" upon
+   while (strategy->id != OMR::endRule)
+      {
+      std::pair<validationConfig::iterator, bool> result = 
+         validationConfig.insert(std::map<OMR::ILValidationRules, OMR::ILValidationOptions>::value_type(strategy->id,strategy->options);
+      TR_ASSERT_FATAL(result.second == true, "Duplicate Rule in Validation Strategy");
+      }
+   }
+    
+
+bool TR::ILValidator::validate(const OMR::ILValidationStrategy *strategy)
+   {
+   //       As things stand, the Rules are guranteed to call "FAIL()" upon
    //       encountering the breach of a specified rule and exit based on
    //       the defined protocol.
    //       See: ILValidationUtils.cpp for the definition of FAIL().
@@ -99,18 +114,28 @@ bool TR::ILValidator::validate()
    //       (Note: If the IL fails on the SoundnessRule then it's almost
    //       always a good idea to Abort immediately.)
 
+   std::map<OMR::ILValidationRules, OMR::ILValidationOptions> validationConfig;
+   // Extract data from the given ILValidationStrategy for easier access.
+   extractILValidationStrategyData(strategy, validationConfig);
+   
    // Rules that are veriified over the entire method.
    TR::ResolvedMethodSymbol* methodSymbol = comp()->getMethodSymbol();
+   std::map<OMR::ILValidationRules, OMR::ILValidationOptions>::iterator mapIter;
    for (auto it = _methodValidationRules.begin(); it != _methodValidationRules.end(); ++it)
        {
-       int32_t ret = (*it)->validate(methodSymbol);
-       if (ret)
-	  // CLEAN_UP: The return code here is rather redundant since if the IL
-          //           fails Validation then this part of the code never gets reached.
-          //           It might be worth investigating whether that's the best course of action
-          //           and if not, then handle the error here instead.
-          /*maybe do something with ret*/
-          return false;
+       mapIter = validationConfig.find((*it)->id());
+       /**
+        * Check to see if the said Rule is part of the given ValidationStrategy.
+        * If not then "ignore" the Rule during the Validation Process.
+        * NOTE: A rule may still not be used during validation if it's part of
+        */      
+       if (mapIter != validationConfig.end())
+          {
+          // TODO: Pass the Validation Option somehow.
+          int32_t ret = (*it)->validate(methodSymbol);
+          if (ret)
+             return false;
+          }
        }
 
    // Checks performed across an extended blocks.
@@ -119,15 +144,20 @@ bool TR::ILValidator::validate()
        TR::TreeTop *tt, *exitTreeTop;
        for (tt = methodSymbol->getFirstTreeTop(); tt; tt = exitTreeTop->getNextTreeTop())
           {
-          TR::TreeTop *firstTreeTop = tt;
-          exitTreeTop = tt->getExtendedBlockExitTreeTop();
-          int32_t ret = (*it)->validate(firstTreeTop, exitTreeTop);
-          // CLEAN_UP: See the comment above.
-          if (ret)
-             return false;
+          mapIter = validationConfig.find(it->id());
+          // Check to see if the said Rule is part of the given ValidationStrategy.
+          if (mapIter != validationConfig.end())
+             {
+             TR::TreeTop *firstTreeTop = tt;
+             exitTreeTop = tt->getExtendedBlockExitTreeTop();
+             int32_t ret = (*it)->validate(firstTreeTop, exitTreeTop);
+             // CLEAN_UP: See the comment above.
+             if (ret)
+                return false;
+             }
           }
 
-      }
+       }
 
    // NodeValidationRules only check per node for a specific property.
    for (auto it = _nodeValidationRules.begin(); it != _nodeValidationRules.end(); ++it)
@@ -135,11 +165,16 @@ bool TR::ILValidator::validate()
        for (TR::PreorderNodeIterator nodeIter(methodSymbol->getFirstTreeTop(), comp(), "NODE_VALIDATOR");
             nodeIter.currentTree(); ++nodeIter)
 	   {
-	   int32_t ret = (*it)->validate(nodeIter.currentNode());
-           // CLEAN_UP: See the comment above.
-	   if (ret)
-	      return false;
-	   }
+           mapIter = validationConfig.find(it->id());
+           // Check to see if the said Rule is part of the given ValidationStrategy.
+           if (mapIter != validationConfig.end())
+              {
+	      int32_t ret = (*it)->validate(nodeIter.currentNode());
+              // CLEAN_UP: See the comment above.
+	      if (ret)
+	         return false;
+              }
+	   }  
        }
 
    return true;
@@ -159,19 +194,19 @@ const TR::ILValidationStrategy *OMR::ILValidator::ILValidationStrategy(TR::Compi
    // Mock Validation Strategies are used for testing, and override 
    // the default compilation strategy.
    // Not sure if I need this right now.
-   if (NULL != OMR::Optimizer::_mockValidationStrategy)
+   if (NULL != OMR::ILValidator::_mockValidationStrategy)
       {
       traceMsg(c, "Using mock Validation Strategy %p\n", OMR::ILValidator::_mockValidationStrategy);
       return OMR::ILValidator::_mockValidationStrategy;
       }
 
-   TR_Hotness strategy = c->getMethodHotness();
-   TR_ASSERT(strategy <= lastOMRStrategy, "Invalid optimization strategy");
+   // Figure out which of the 3 states I'm in maybe?
+   // Options: 1. Right after ILGen, in between every Optimization, right before Codegen
 
    // Downgrade strategy rather than crashing in prod.
    if (strategy > lastOMRStrategy)
       strategy = lastOMRStrategy;
 
-   return omrCompilationStrategies[strategy]; // Pass some default.
+   return omrValidationStrategies[strategy]; // Pass some default.
    }
 */

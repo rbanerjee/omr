@@ -23,8 +23,10 @@
 #define ILVALIDATOR_HPP
 
 #include "infra/Flags.hpp"                  // for flags32_t
+#include "ras/ILValidationStrategies.hpp"   // for OMR::ILValidationStrategy, OMR::ILValidationRules etc
 
-#include <vector>                           // for templated Vectors.
+#include <map>                              // for std::map
+#include <vector>                           // for templated Vectors
 
 namespace TR { class BlockValidationRule; }
 namespace TR { class Compilation; }
@@ -40,50 +42,52 @@ class ILValidator
    ILValidator(TR::Compilation *comp);
    ~ILValidator();
 
-   // Validate via the provided rules.
-   // CLEAN_UP: Provide a BETTER description as to what this does.
-   bool validate();
+  // CLEAN_UP: This needs updating.
+  /** \brief
+   *     ...
+   *
+   *  \return
+   *     ...
+   */
+   bool validate(const ILValidationStrategy *strategy);
 
-// WIP:
-/*
-   enum
-      {
-      soundnessRule                                     = 0x00000001,
-      validateLivenessBoundaries                        = 0x00000002,
-      validateNodeRefCountWithinBlock                   = 0x00000004,
-      validateChildCount                                = 0x00000008,
-      validateChildTypes                                = 0x00000010,
-      // TODO: Add the following commented out ones.
-//      validateBinaryOpcodeChildLayout                   = 0x00000020,
-      validate_ireturnReturnType                        = 0x00000040,
-      validate_axaddPlatformSpecificRequirement         = 0x00000080,
-//      warnAboutDeprecatedOpcodes                        = 0x00000100,
-//      verifyTrees[Maybe]                                       = 0x00000200,
-      };
-*/
+   
 
-   // TODO: Add flag setting methods
-//   static const ILValidationStrategy *ilValidationStrategy(TR::Compilation *comp);
+   void TR::extractILValidationStrategyData(const OMR::ILValidationStrategy *strategy,
+                                            std::map<OMR::ILValidationRules,
+                                                     OMR::ILValidationOptions> &validationConfig)
 
 
    private:
    TR::Compilation  *_comp;
    TR::Compilation *comp();
 
-   // The Validation rules are categorized into three types based on the
-   // "scope" required to validate them.
-   // For example, a MethodValidationRule would require information about
-   // the entire Method(encapsulated as a TR::ResolvedMethodSymbol) in order
-   // to find out if the IL satisifies the given condition.
-   // Whereas a NodeValidationRule checks whether a particular TR::Node has
-   // some property. Meaning a NodeValidationRule doesn't need to keep track
-   // of already encountered nodes or peek into other blocks to see whether
-   // a particular Node is valid or not.
+   void TR::extractILValidationStrategyData(const ILValidationStrategy *strategy,
+                                            std::map<OMR::ILValidationRules,
+                                                     OMR::ILValidationOptions> &validationConfig)
+
+   /**
+    * The Validation rules are categorized into three types based on the
+    *  "scope" required to validate them.
+    */
+
+   /**
+    * A MethodValidationRule would require information about
+    * the entire Method(encapsulated as a TR::ResolvedMethodSymbol) in order
+    * to find out if the IL satisifies the given condition.
+    */
    std::vector<TR::MethodValidationRule *> _methodValidationRules;
+   /**
+    * Used for checking properties across an extended Block.
+    */
    std::vector<TR::BlockValidationRule *> _blockValidationRules;
+   /** NodeValidationRules check whether a particular TR::Node has
+    * some property. Meaning a NodeValidationRule doesn't need to keep track
+    * of already encountered nodes or peek into other blocks to see whether
+    * a particular Node is valid or not.
+    */
    std::vector<TR::NodeValidationRule *> _nodeValidationRules;
 
-//   flags32_t                 _flags;
    };
 
    TR::ILValidator *createILValidatorObject(TR::Compilation *comp);

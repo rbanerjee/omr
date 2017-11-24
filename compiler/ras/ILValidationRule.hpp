@@ -31,9 +31,10 @@ class ILValidationRule
    {
    public:
    // CLEAN_UP: Just make this pure virtual for now.
-   virtual ~ILValidationRule() = 0;
+   virtual ~ILValidationRule() {
+   };
 
-    };
+   };
 
 }
 #endif

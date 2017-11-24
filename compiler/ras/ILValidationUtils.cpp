@@ -29,6 +29,7 @@
 #include "il/ILOps.hpp"                               // for TR::ILOpCode
 
 
+// CLEAN_UP: This is to preserve backwards compatibility.
 #if defined(DEBUG) || defined(PROD_WITH_ASSUMES)
 #define ABORT() TR::trap()
 #else
