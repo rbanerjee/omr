@@ -21,12 +21,14 @@
 
 #include "ras/ILValidationRules.hpp"
 
+// CLEAN_UP: Need for CompOptions
 #include "env/CompilerEnv.hpp"
 #include "il/Block.hpp"                        // for TR::Block
 #include "il/DataTypes.hpp"                    // for TR::DataType, etc
 #include "il/symbol/ResolvedMethodSymbol.hpp"  // for ResolvedMethodSymbol
 #include "infra/Checklist.hpp"                 // for NodeChecklist
 #include "infra/ILWalk.hpp"                    // for PostorderNodeOccurrenceIterator
+#include "ras/ILValidationStrategies.hpp"      // for OMR::soundnessRule, OMR::validateLivenessBoundaries, etc
 #include "ras/ILValidationUtils.hpp"           // for TR::LiveNodeWindow, TR::checkCondition, etc
 
 // CLEAN_UP: Add the concept of IDs.
@@ -43,6 +45,7 @@
  */
 TR::SoundnessRule::SoundnessRule(TR::Compilation *comp)
    : _comp(comp)
+   , MethodValidationRule(OMR::soundnessRule)
    {
    }
 
@@ -151,6 +154,7 @@ void TR::SoundnessRule::checkSoundnessCondition(TR::TreeTop *location, bool cond
 
 TR::ValidateLivenessBoundaries::ValidateLivenessBoundaries(TR::Compilation *comp)
    : _comp(comp)
+   , MethodValidationRule(OMR::validateLivenessBoundaries)
    {
    }
 
@@ -231,6 +235,7 @@ void TR::ValidateLivenessBoundaries::validateEndOfExtendedBlockBoundary(TR::Node
  */
 TR::ValidateNodeRefCountWithinBlock::ValidateNodeRefCountWithinBlock(TR::Compilation *comp)
    : _comp(comp)
+   , BlockValidationRule(OMR::validateNodeRefCountWithinBlock)
    {
    }
 
@@ -318,6 +323,7 @@ void TR::ValidateNodeRefCountWithinBlock::validateRefCountPass2(TR::Node *node)
  */
 TR::ValidateChildCount::ValidateChildCount(TR::Compilation *comp)
    : _comp(comp)
+   , NodeValidationRule(OMR::validateChildCount)
    {
    }
 
@@ -369,6 +375,7 @@ void TR::ValidateChildCount::validate(TR::Node *node)
  */
 TR::ValidateChildTypes::ValidateChildTypes(TR::Compilation *comp)
    : _comp(comp)
+   , NodeValidationRule(OMR::validateChildTypes)
    {
    }
 
@@ -412,6 +419,7 @@ void TR::ValidateChildTypes::validate(TR::Node *node)
  */
 TR::Validate_ireturnReturnType::Validate_ireturnReturnType(TR::Compilation *comp)
    : _comp(comp)
+   , NodeValidationRule(OMR::validate_ireturnReturnType)
    {
    }
 
@@ -441,6 +449,7 @@ void TR::Validate_ireturnReturnType::validate(TR::Node *node)
  */
 TR::Validate_axaddPlatformSpecificRequirement::Validate_axaddPlatformSpecificRequirement(TR::Compilation *comp)
    : _comp(comp)
+   , NodeValidationRule(OMR::validate_axaddPlatformSpecificRequirement)
    {
    }
 

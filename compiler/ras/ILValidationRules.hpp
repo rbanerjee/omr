@@ -43,6 +43,8 @@
 #ifndef ILVALIDATIONRULES_HPP
 #define ILVALIDATIONRULES_HPP
 
+#include "ras/ILValidationStrategies.hpp"      // for OMR::ILValidationRule
+
 #include "infra/BitVector.hpp"                 // for TR_BitVector
 #include "infra/SideTable.hpp"                 // for NodeSideTable
 
@@ -64,7 +66,12 @@ namespace TR {
  */
 class MethodValidationRule
    {
+   OMR::ILValidationRule _id;
    public:
+   MethodValidationRule(OMR::ILValidationRule id)
+   : _id(id)
+   {
+   }
    /**
     * @return returns on success.
     *
@@ -87,6 +94,9 @@ class MethodValidationRule
     *        
     */
    virtual void validate(TR::ResolvedMethodSymbol *methodSymbol) = 0;
+   // CLEAN_UP: explain why.
+
+   OMR::ILValidationRule id()   { return _id; }
    };
 
 
@@ -132,7 +142,12 @@ class ValidateLivenessBoundaries : public TR::MethodValidationRule
 
 class BlockValidationRule
    {
+   OMR::ILValidationRule _id;
    public:
+   BlockValidationRule(OMR::ILValidationRule id)
+   : _id(id)
+   {
+   }
    /**
     * @return returns on success.
     *
@@ -142,6 +157,8 @@ class BlockValidationRule
     * See ILValidationUtils.cpp for the definition of FAIL().
     */
    virtual void validate(TR::TreeTop *firstTreeTop, TR::TreeTop *exitTreeTop) = 0;
+
+   OMR::ILValidationRule id()   { return _id; }
    };
 
 
@@ -170,7 +187,12 @@ class ValidateNodeRefCountWithinBlock : public TR::BlockValidationRule
  */
 class NodeValidationRule
    {
+   OMR::ILValidationRule _id;
    public:
+   NodeValidationRule(OMR::ILValidationRule id)
+   : _id(id)
+   {
+   }
    /**
     * Verify the node(TR::Node) of a method has certain properties.
     *
@@ -184,6 +206,8 @@ class NodeValidationRule
     * compilation stops.
     */
    virtual void validate(TR::Node *node) = 0;
+
+   OMR::ILValidationRule id()   { return _id; }
    };
 
 

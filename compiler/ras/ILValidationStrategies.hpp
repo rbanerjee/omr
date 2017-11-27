@@ -26,7 +26,7 @@
 
 namespace OMR {
 
-enum ILValidationRules
+enum ILValidationRule
    {
    soundnessRule,
    // TODO: Implement this.
@@ -43,53 +43,51 @@ enum ILValidationRules
    endRules
    };
 
-/**
- * TODO: Eventually ILValidationStrategy should be implemented
- *       to encapsulate information regarding a particular
- *       Validation Rule and the associated option used by the
- *       ILValidator while verifying it.
- *       Such options might include whether the Rule should be treated
- *       as a Strict Rule or not (i.e whether you abort compilation
- *       upon encountering a failure).
- *       For example, a Rule might be treated as a Strict Rule during
- *       preCodeGen validation, where as, it might not be immediately
- *       after ILgen.
- *       Also, a field like `ifEnable` can be used dictate whether
- *       a specific  option was passed during Compilation, and based on
- *       that the Validator can further filter out the rules from a given
- *       Strategy.
- *
- *       struct ILValidationStrategy
- *       {
- *          OMR::ILValidationRules        id;
- *          OMR::ILValidationOptions      options;
- *       };
- */
-// CLEAN_UP:  Not sure if this works
-typedef ILValidationRules ILValidationStrategy;
+struct ILValidationStrategy
+   {
+   OMR::ILValidationRule        id;
+   /**
+    * TODO: Eventually ILValidationStrategy should be implemented
+    *       to encapsulate information regarding a particular
+    *       Validation Rule and the associated option used by the
+    *       ILValidator while verifying it.
+    *       Such options might include whether the Rule should be treated
+    *       as a Strict Rule or not (i.e whether you abort compilation
+    *       upon encountering a failure).
+    *       For example, a Rule might be treated as a Strict Rule during
+    *       preCodeGen validation, where as, it might not be immediately
+    *       after ILgen.
+    *       Also, a field like `ifEnable` can be used dictate whether
+    *       a specific  option was passed during Compilation, and based on
+    *       that the Validator can further filter out the rules from a given
+    *       Strategy.
+    *
+    */
+//   OMR::ILValidationOptions     options;
+   };
 
 /* Do not perform any Validation under this Strategy. */
 const ILValidationStrategy emptyStrategy[] =
    {
-   endRules
+   {endRules}
    };
 
 /* Strategy used to Validate right after ILGeneration. */
 const ILValidationStrategy postILgenValidatonStrategy[] =
    {
-   soundnessRule,
+   {soundnessRule               /*TODO: specify default options for this Rule under the said strategy*/},
    // CLEAN_UP: THIS should fail and hence the need to have a more state aware
    //           form of validation.
    //           Keep for now for testing purposes.
    // This should fail right after ILGeneration.
    // Since currently TreeSimplifier takes care of this.
-   validateBinaryOpcodeChildLayout,
-   validateChildCount,
-   validateChildTypes,
-   validateLivenessBoundaries,
-   validateNodeRefCountWithinBlock,
-   validate_noDeprecatedOpcodes,
-   endRules
+   {validateBinaryOpcodeChildLayout},
+   {validateChildCount},
+   {validateChildTypes},
+   {validateLivenessBoundaries},
+   {validateNodeRefCountWithinBlock},
+   {validate_noDeprecatedOpcodes},
+   {endRules}
    };
 
 /**
@@ -98,16 +96,16 @@ const ILValidationStrategy postILgenValidatonStrategy[] =
  */
 const ILValidationStrategy preCodegenValidationStrategy[] =
    {
-   soundnessRule,
-   validateBinaryOpcodeChildLayout,
-   validateChildCount,
-   validateChildTypes,
-   validateLivenessBoundaries,
-   validateNodeRefCountWithinBlock,
-   validate_axaddPlatformSpecificRequirement,
-   validate_ireturnReturnType,
-   validate_noDeprecatedOpcodes,
-   endRules
+   {soundnessRule},
+   {validateBinaryOpcodeChildLayout},
+   {validateChildCount},
+   {validateChildTypes},
+   {validateLivenessBoundaries},
+   {validateNodeRefCountWithinBlock},
+   {validate_axaddPlatformSpecificRequirement},
+   {validate_ireturnReturnType},
+   {validate_noDeprecatedOpcodes},
+   {endRules}
    };
 
 enum ILValidationContext
