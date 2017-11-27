@@ -86,7 +86,7 @@ class MethodValidationRule
     *       Optimization etc. So it makes sense to add that functionality.
     *        
     */
-   void validate(TR::ResolvedMethodSymbol *methodSymbol) = 0;
+   virtual void validate(TR::ResolvedMethodSymbol *methodSymbol) = 0;
    };
 
 
@@ -141,7 +141,7 @@ class BlockValidationRule
     * the defined protocol.
     * See ILValidationUtils.cpp for the definition of FAIL().
     */
-   void validate(TR::TreeTop *firstTreeTop, TR::TreeTop *exitTreeTop) = 0;
+   virtual void validate(TR::TreeTop *firstTreeTop, TR::TreeTop *exitTreeTop) = 0;
    };
 
 
@@ -183,7 +183,7 @@ class NodeValidationRule
     * @return 0 on success, or a non-zero error code. If non-zero is returned,
     * compilation stops.
     */
-   void validate(TR::Node *node) = 0;
+   virtual void validate(TR::Node *node) = 0;
    };
 
 
@@ -245,6 +245,8 @@ class Validate_axaddPlatformSpecificRequirement : public TR::NodeValidationRule
    };
 
 /* NOTE: Please add any new NodeValidationRules here */
+
+} //namespace TR
 
 
 #endif

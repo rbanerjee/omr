@@ -21,7 +21,7 @@
 
 #include "ras/ILValidationRules.hpp"
 
-
+#include "env/CompilerEnv.hpp"
 #include "il/Block.hpp"                        // for TR::Block
 #include "il/DataTypes.hpp"                    // for TR::DataType, etc
 #include "il/symbol/ResolvedMethodSymbol.hpp"  // for ResolvedMethodSymbol
@@ -133,7 +133,11 @@ void TR::SoundnessRule::checkSoundnessCondition(TR::TreeTop *location, bool cond
       TR::vprintDiagnostic(_comp, formatStr, args);
       va_end(args);
       TR::printDiagnostic(_comp, "\n");
-      FAIL();
+      // CLEAN_UP: This option needs to be added.
+      // If the Soundness Check fails, then we almost certainly want to abort immediately.
+//      TR_ASSERT_FATAL(comp()->getOption(TR_continueAfterValidationError),
+      TR_ASSERT_FATAL(false,
+                      "IL Soundness Validation Error");
       }
    }
 
