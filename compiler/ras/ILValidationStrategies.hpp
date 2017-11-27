@@ -77,7 +77,7 @@ const ILValidationStrategy emptyStrategy[] =
 /* Strategy used to Validate right after ILGeneration. */
 const ILValidationStrategy postILgenValidatonStrategy[] =
    {
-   soundnessRule
+   soundnessRule,
    // CLEAN_UP: THIS should fail and hence the need to have a more state aware
    //           form of validation.
    //           Keep for now for testing purposes.
@@ -99,7 +99,7 @@ const ILValidationStrategy postILgenValidatonStrategy[] =
 const ILValidationStrategy preCodegenValidationStrategy[] =
    {
    soundnessRule,
-   validateBinaryOpcodeChildLayouti,
+   validateBinaryOpcodeChildLayout,
    validateChildCount,
    validateChildTypes,
    validateLivenessBoundaries,
@@ -108,15 +108,15 @@ const ILValidationStrategy preCodegenValidationStrategy[] =
    validate_ireturnReturnType,
    validate_noDeprecatedOpcodes,
    endRules
-   }
+   };
 
-enum ILValidationTypes
+enum ILValidationContext
    {
-   noValidation
-   preCodegenValidation
+   noValidation,
+   preCodegenValidation,
    postILgenValidation
-   // NOTE: Please add any new ILValidationTypes here! 
-   }
+   // NOTE: Please add any new ILValidationContext here!
+   };
 
 /**
  * Example
@@ -131,7 +131,7 @@ const ILValidationStrategy *omrValidationStrategies[] =
    {
    emptyStrategy,
    preCodegenValidationStrategy,
-   postILgenValidatonStrategy,
+   postILgenValidatonStrategy
    };
 
 
