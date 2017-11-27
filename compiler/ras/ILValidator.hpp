@@ -22,10 +22,10 @@
 #ifndef ILVALIDATOR_HPP
 #define ILVALIDATOR_HPP
 
-#include "infra/Flags.hpp"                  // for flags32_t
-#include "ras/ILValidationStrategies.hpp"   // for OMR::ILValidationStrategy, OMR::ILValidationRules etc
-
 #include <vector>                           // for templated Vectors
+
+#include "ras/ILValidationStrategies.hpp"   // for OMR::ILValidationStrategy
+
 
 namespace TR { class BlockValidationRule; }
 namespace TR { class Compilation; }
@@ -48,11 +48,11 @@ class ILValidator
    *  \return
    *     ...
    */
-   bool validate(const OMR::ILValidationStrategy *strategy);
+   void validate(const OMR::ILValidationStrategy *strategy);
 
    private:
    TR::Compilation  *_comp;
-   TR::Compilation *comp();
+   TR::Compilation* comp();
 
    /**
     * The Validation rules are categorized into three types based on the
@@ -77,9 +77,28 @@ class ILValidator
     */
    std::vector<TR::NodeValidationRule *> _nodeValidationRules;
 
+  // CLEAN_UP: This needs updating.
+  // Selects the required set of Rules to validate against based on the passed
+  // strategy.
+  /** \brief
+   *     ...
+   *
+   *  \return
+   *     ...
+   */
+   std::vector<TR::MethodValidationRule *>
+   getRequiredMethodValidationRules(const OMR::ILValidationStrategy *strategy);
+
+   std::vector<TR::BlockValidationRule *>
+   getRequiredBlockValidationRules(const OMR::ILValidationStrategy *strategy);
+
+   std::vector<TR::NodeValidationRule *>
+   getRequiredNodeValidationRules(const OMR::ILValidationStrategy *strategy);
+
+
    };
 
-   TR::ILValidator *createILValidatorObject(TR::Compilation *comp);
+   TR::ILValidator* createILValidatorObject(TR::Compilation *comp);
 
 }
 

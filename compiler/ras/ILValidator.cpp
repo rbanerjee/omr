@@ -19,13 +19,12 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  *******************************************************************************/
 
-#include "ras/ILValidator.hpp"
-
 #include <algorithm>                               // for std::for_each
 
+#include "ras/ILValidator.hpp"
 #include "compile/Compilation.hpp"                 // for Compilation
 #include "infra/Assert.hpp"                        // for TR_ASSERT_FATAL
-#include "infra/ILWalk.hpp"                        // for PostorderNodeOccurrenceIterator
+#include "infra/ILWalk.hpp"                        // for TR::PreorderNodeIterator
 #include "ras/ILValidationRules.hpp"               // for TR::MethodValidationRules etc.
 
 template <typename T, size_t N> static
@@ -62,7 +61,7 @@ TR::ILValidator::ILValidator(TR::Compilation *comp)
      /**
       * NOTE: Please initialize any new *ILValidationRule here!
       *
-      * Also ILValidationRules.hpp and ILValidationStrategies.hpp
+      * Also, ILValidationRules.hpp and ILValidationStrategies.hpp
       * need to be updated everytime a new ILValidation Rule
       * is added.
       */
@@ -97,15 +96,20 @@ TR::Compilation *TR::ILValidator::comp()
    return _comp;
    }
 
+
 std::vector<TR::MethodValidationRule *>
-TR::getRequiredMethodValidationRules(const OMR::ILValidationStrategy *strategy)
+TR::ILValidator::getRequiredMethodValidationRules(const OMR::ILValidationStrategy *strategy)
    {
    std::vector<TR::MethodValidationRule *> reqMethodValidationRules;
-   while (strategy->id != OMR::endRule)
+   while (strategy->id != OMR::endRules)
       {
       for (auto it = _methodValidationRules.begin(); it != _methodValidationRules.end(); ++it)
          {
-         if (strategy->id == (*it)->getID())
+         /**
+          *Each *ValidationRule has a unique id. These ids are defined in
+          *ILValidationStrategies.hpp and they are assigned in ILValidationRules.cpp. 
+          */
+         if (strategy->id == (*it)->id())
             reqMethodValidationRules.push_back((*it));
          }
       strategy++;
@@ -113,16 +117,15 @@ TR::getRequiredMethodValidationRules(const OMR::ILValidationStrategy *strategy)
    return reqMethodValidationRules;
    }
 
-    
 std::vector<TR::BlockValidationRule *>
-TR::getRequiredBlockValidationRules(const OMR::ILValidationStrategy *strategy)
+TR::ILValidator::getRequiredBlockValidationRules(const OMR::ILValidationStrategy *strategy)
    {
    std::vector<TR::BlockValidationRule *> reqBlockValidationRules;
-   while (strategy->id != OMR::endRule)
+   while (strategy->id != OMR::endRules)
       {
       for (auto it = _blockValidationRules.begin(); it != _blockValidationRules.end(); ++it)
          {
-         if (strategy->id == (*it)->getID())
+         if (strategy->id == (*it)->id())
             reqBlockValidationRules.push_back((*it));
          }
       strategy++;
@@ -131,28 +134,33 @@ TR::getRequiredBlockValidationRules(const OMR::ILValidationStrategy *strategy)
    }
 
 std::vector<TR::NodeValidationRule *>
-TR::getRequiredNodeValidationRules(const OMR::ILValidationStrategy *strategy)
+TR::ILValidator::getRequiredNodeValidationRules(const OMR::ILValidationStrategy *strategy)
    {
    std::vector<TR::NodeValidationRule *> reqNodeValidationRules;
-   while (strategy->id != OMR::endRule)
+   while (strategy->id != OMR::endRules)
       {
       for (auto it = _nodeValidationRules.begin(); it != _nodeValidationRules.end(); ++it)
          {
-         if (strategy->id == (*it)->getID())
-            reqBlockValidationRules.push_back((*it));
+         if (strategy->id == (*it)->id())
+            reqNodeValidationRules.push_back((*it));
          }
       strategy++;
       }
-   return reqBlockValidationRules;
+   return reqNodeValidationRules;
    }
+
 
 void TR::ILValidator::validate(const OMR::ILValidationStrategy *strategy)
    {
 
    // CLEAN_UP: Selection Phase.
-   std::vector<TR::MethodValidationRule *> reqMethodValidationRules = getRequiredMethodValidationRules(strategy);
-   std::vector<TR::BlockValidationRule *> reqBlockValidationRules = getRequiredMethodValidationRules(strategy);
-   std::vector<TR::NodeValidationRule *> reqNodeValidationRules = getRequiredMethodValidationRules(strategy);
+   std::vector<TR::MethodValidationRule *> reqMethodValidationRules =
+      getRequiredMethodValidationRules(strategy);
+   std::vector<TR::BlockValidationRule *> reqBlockValidationRules =
+      getRequiredBlockValidationRules(strategy);
+   std::vector<TR::NodeValidationRule *> reqNodeValidationRules =
+      getRequiredNodeValidationRules(strategy);
+
 
    // CLEAN_UP: Validation Phase.
    // Rules that are veriified over the entire method.
@@ -188,9 +196,7 @@ void TR::ILValidator::validate(const OMR::ILValidationStrategy *strategy)
 
 TR::ILValidator* TR::createILValidatorObject(TR::Compilation *comp)
    {
-   TR::ILValidator *ilValidator = NULL;
-   ilValidator = new (comp->trHeapMemory()) TR::ILValidator(comp);
-   return ilValidator;
+   return new (comp->trHeapMemory()) TR::ILValidator(comp);
    }
 
 // TODO: Implement the following. This would would be used to "fetch" the required strategy.
