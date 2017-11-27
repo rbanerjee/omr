@@ -97,10 +97,64 @@ TR::Compilation *TR::ILValidator::comp()
    return _comp;
    }
 
+std::vector<TR::MethodValidationRule *>
+TR::getRequiredMethodValidationRules(const OMR::ILValidationStrategy *strategy)
+   {
+   std::vector<TR::MethodValidationRule *> reqMethodValidationRules;
+   while (strategy->id != OMR::endRule)
+      {
+      for (auto it = _methodValidationRules.begin(); it != _methodValidationRules.end(); ++it)
+         {
+         if (strategy->id == (*it)->getID())
+            reqMethodValidationRules.push_back((*it));
+         }
+      strategy++;
+      }
+   return reqMethodValidationRules;
+   }
+
     
+std::vector<TR::BlockValidationRule *>
+TR::getRequiredBlockValidationRules(const OMR::ILValidationStrategy *strategy)
+   {
+   std::vector<TR::BlockValidationRule *> reqBlockValidationRules;
+   while (strategy->id != OMR::endRule)
+      {
+      for (auto it = _blockValidationRules.begin(); it != _blockValidationRules.end(); ++it)
+         {
+         if (strategy->id == (*it)->getID())
+            reqBlockValidationRules.push_back((*it));
+         }
+      strategy++;
+      }
+   return reqBlockValidationRules;
+   }
+
+std::vector<TR::NodeValidationRule *>
+TR::getRequiredNodeValidationRules(const OMR::ILValidationStrategy *strategy)
+   {
+   std::vector<TR::NodeValidationRule *> reqNodeValidationRules;
+   while (strategy->id != OMR::endRule)
+      {
+      for (auto it = _nodeValidationRules.begin(); it != _nodeValidationRules.end(); ++it)
+         {
+         if (strategy->id == (*it)->getID())
+            reqBlockValidationRules.push_back((*it));
+         }
+      strategy++;
+      }
+   return reqBlockValidationRules;
+   }
+
 void TR::ILValidator::validate(const OMR::ILValidationStrategy *strategy)
    {
 
+   // CLEAN_UP: Selection Phase.
+   std::vector<TR::MethodValidationRule *> reqMethodValidationRules = getRequiredMethodValidationRules(strategy);
+   std::vector<TR::BlockValidationRule *> reqBlockValidationRules = getRequiredMethodValidationRules(strategy);
+   std::vector<TR::NodeValidationRule *> reqNodeValidationRules = getRequiredMethodValidationRules(strategy);
+
+   // CLEAN_UP: Validation Phase.
    // Rules that are veriified over the entire method.
    // TODO: find the required RULES. Instead of doing this over all available ones.
    TR::ResolvedMethodSymbol* methodSymbol = comp()->getMethodSymbol();
