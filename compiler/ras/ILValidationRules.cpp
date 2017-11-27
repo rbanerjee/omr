@@ -27,7 +27,6 @@
 #include "il/symbol/ResolvedMethodSymbol.hpp"  // for ResolvedMethodSymbol
 #include "infra/Checklist.hpp"                 // for NodeChecklist
 #include "infra/ILWalk.hpp"                    // for PostorderNodeOccurrenceIterator
-#include "ras/MethodValidationRules.hpp"
 #include "ras/ILValidationUtils.hpp"           // for TR::LiveNodeWindow, TR::checkCondition, etc
 
 // CLEAN_UP: Add the concept of IDs.
@@ -47,7 +46,7 @@ TR::SoundnessRule::SoundnessRule(TR::Compilation *comp)
    {
    }
 
-int32_t TR::SoundnessRule::validate(TR::ResolvedMethodSymbol *methodSymbol)
+void TR::SoundnessRule::validate(TR::ResolvedMethodSymbol *methodSymbol)
    {
    TR::TreeTop *start = methodSymbol->getFirstTreeTop();
    TR::TreeTop *stop = methodSymbol->getLastTreeTop();
@@ -90,7 +89,6 @@ int32_t TR::SoundnessRule::validate(TR::ResolvedMethodSymbol *methodSymbol)
 			    ancestorNodes, visitedNodes);
 	 }
       }
-   return 0;
    }
 
 void TR::SoundnessRule::checkNodeSoundness(TR::TreeTop *location, TR::Node *node,
@@ -152,7 +150,7 @@ TR::ValidateLivenessBoundaries::ValidateLivenessBoundaries(TR::Compilation *comp
    {
    }
 
-int32_t TR::ValidateLivenessBoundaries::validate(TR::ResolvedMethodSymbol *methodSymbol)
+void TR::ValidateLivenessBoundaries::validate(TR::ResolvedMethodSymbol *methodSymbol)
    {
    /**
     * These must be initialized at the start of every validate call,
@@ -200,7 +198,6 @@ int32_t TR::ValidateLivenessBoundaries::validate(TR::ResolvedMethodSymbol *metho
             validateEndOfExtendedBlockBoundary(node, liveNodes);
          }
       }
-   return 0;
    }
 
 void TR::ValidateLivenessBoundaries::validateEndOfExtendedBlockBoundary(TR::Node *node,
@@ -233,7 +230,7 @@ TR::ValidateNodeRefCountWithinBlock::ValidateNodeRefCountWithinBlock(TR::Compila
    {
    }
 
-int32_t TR::ValidateNodeRefCountWithinBlock::validate(TR::TreeTop *firstTreeTop,
+void TR::ValidateNodeRefCountWithinBlock::validate(TR::TreeTop *firstTreeTop,
                                                       TR::TreeTop *exitTreeTop)
    {
    _nodeChecklist.empty();
@@ -257,8 +254,6 @@ int32_t TR::ValidateNodeRefCountWithinBlock::validate(TR::TreeTop *firstTreeTop,
       {
       validateRefCountPass2(tt->getNode());
       }
-
-   return 0;
    }
 
 /**
@@ -322,7 +317,7 @@ TR::ValidateChildCount::ValidateChildCount(TR::Compilation *comp)
    {
    }
 
-int32_t TR::ValidateChildCount::validate(TR::Node *node)
+void TR::ValidateChildCount::validate(TR::Node *node)
    {
    auto opcode = node->getOpCode();
 
@@ -357,7 +352,6 @@ int32_t TR::ValidateChildCount::validate(TR::Node *node)
                             actChildCount, expChildCount, expChildCount + 1);
          }
       }
-   return 0;
    }
 
 
@@ -374,7 +368,7 @@ TR::ValidateChildTypes::ValidateChildTypes(TR::Compilation *comp)
    {
    }
 
-int32_t TR::ValidateChildTypes::validate(TR::Node *node)
+void TR::ValidateChildTypes::validate(TR::Node *node)
    {
    auto opcode = node->getOpCode();
    if (opcode.expectedChildCount() != ILChildProp::UnspecifiedChildCount)
@@ -407,7 +401,6 @@ int32_t TR::ValidateChildTypes::validate(TR::Node *node)
             }
          }
       }
-   return 0;
    }
 
 /**
@@ -418,7 +411,7 @@ TR::Validate_ireturnReturnType::Validate_ireturnReturnType(TR::Compilation *comp
    {
    }
 
-int32_t TR::Validate_ireturnReturnType::validate(TR::Node *node)
+void TR::Validate_ireturnReturnType::validate(TR::Node *node)
    {
    auto opcode = node->getOpCode();
    if (opcode.getOpCodeValue() == TR::ireturn)
@@ -436,7 +429,6 @@ int32_t TR::Validate_ireturnReturnType::validate(TR::Node *node)
                                    childTypeName);
          }
       }
-   return 0;
    }
 
 
@@ -448,7 +440,7 @@ TR::Validate_axaddPlatformSpecificRequirement::Validate_axaddPlatformSpecificReq
    {
    }
 
-int32_t TR::Validate_axaddPlatformSpecificRequirement::validate(TR::Node *node)
+void TR::Validate_axaddPlatformSpecificRequirement::validate(TR::Node *node)
    {
    auto opcode = node->getOpCode();
    auto opcodeCodeValue = opcode.getOpCodeValue();
@@ -459,6 +451,5 @@ int32_t TR::Validate_axaddPlatformSpecificRequirement::validate(TR::Node *node)
                                "%s is only valid on 32 bit platforms",
                                opcodeCodeValue);
       }
-   return 0;
    }
 
