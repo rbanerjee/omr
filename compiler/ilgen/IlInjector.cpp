@@ -36,6 +36,7 @@
 #include "ilgen/IlInjector.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "infra/Cfg.hpp"
+#include "ras/ILValidationStrategies.hpp"      // for TR::postILgenValidation
 #include "ras/ILValidator.hpp"                 // for TR::ILValidator
 
 #define OPT_DETAILS "O^O ILGEN: "
@@ -140,7 +141,7 @@ OMR::IlInjector::genIL()
       //       and set up the ILValidator. Though, this is certainly the
       //       earliest point in the pipeline where it makes sense to do so.
       _comp->setILValidator(createILValidatorObject(_comp));
-      _comp->validateIL();
+      _comp->validateIL(TR::postILgenValidation);
       }
 
    return success;

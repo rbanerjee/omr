@@ -66,6 +66,7 @@ namespace OMR { typedef OMR::Compilation CompilationConnector; }
 #include "optimizer/Optimizations.hpp"        // for Optimizations, etc
 #include "ras/Debug.hpp"                      // for TR_DebugBase
 #include "ras/DebugCounter.hpp"               // for TR_DebugCounter, etc
+#include "ras/ILValidationStrategies.hpp"     // for TR::ILValidationContext etc
 
 
 #include "omr.h"
@@ -671,7 +672,7 @@ public:
    void setILValidator(TR::ILValidator *ilValidator) { _ilValidator = ilValidator; }
    // TODO: Add overrides for Enum values so we can validate the IL accordingly.
    //       As in depending on whether it is right after il-gen, post-optimization or pre-codegen.
-   void validateIL();
+   void validateIL(TR::ILValidationContext ilValidationContext);
 
    void verifyTrees(TR::ResolvedMethodSymbol *s = 0);
    void verifyBlocks(TR::ResolvedMethodSymbol *s = 0);
