@@ -462,7 +462,7 @@ void TR::Validate_axaddPlatformSpecificRequirement::validate(TR::Node *node)
       {
       TR::checkCondition(node, TR::Compiler->target.is32Bit() == true, _comp,
                                "%s is only valid on 32 bit platforms",
-                               opcodeCodeValue);
+                               opcode.getName());
       }
    }
 
