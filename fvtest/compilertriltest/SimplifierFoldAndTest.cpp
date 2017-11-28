@@ -81,18 +81,6 @@ class SimplifierFoldAndTest : public TRTest::JitOptTest
        * This could also be done in test cases themselves.
        */
       addOptimization(OMR::treeSimplification);
-      // TODO: Once the ILValidator is complete, add the following call.
-      //       The rules are become part of the existing validation Strategy.
-      addNodeValidationRule(SimplifierFoldAndIlVerifier);
-      // Sumilarly add functionality for the following kinds of calls
-//      addBlockValidationRule(some_block_validation_rule);
-//      addMethodValidationRule(....)
-      // TODO: Alternative
-//      ILValidationStrategy strategy = {OMR::soundnessRule, OMR::Strict};
-//      compilerSetMockValidationStrategy(strategy);
-//      Uses that every time validation is called.
-
-      }
       }
 
    };
