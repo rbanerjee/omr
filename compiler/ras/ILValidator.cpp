@@ -26,7 +26,82 @@
 #include "infra/Assert.hpp"                        // for TR_ASSERT_FATAL
 #include "infra/ILWalk.hpp"                        // for TR::PreorderNodeIterator
 #include "ras/ILValidationRules.hpp"               // for TR::MethodValidationRules etc.
+#include "ras/ILValidationStrategies.hpp"          // for OMR::ILValidationStrategy,
+                                                   //     OMR::soundnessRule etc.
 
+
+/**************************************************************************
+ *
+ * OMR ILValidation Strategies
+ *
+ **************************************************************************/
+
+/* Do not perform any Validation under this Strategy. */
+const OMR::ILValidationStrategy OMR::emptyStrategy[] =
+   {
+   { OMR::endRules }
+   };
+
+/* Strategy used to Validate right after ILGeneration. */
+const OMR::ILValidationStrategy OMR::postILgenValidatonStrategy[] =
+   {
+   // TODO: specify default options for this Rule under the said strategy
+   { OMR::soundnessRule                   },
+   // TODO: This should not work.
+   { OMR::validateBinaryOpcodeChildLayout },
+   { OMR::validateChildCount              },
+   { OMR::validateChildTypes              },
+   { OMR::validateLivenessBoundaries      },
+   { OMR::validateNodeRefCountWithinBlock },
+   { OMR::validate_noDeprecatedOpcodes    },
+   { OMR::endRules                        }
+   };
+
+/**
+ * Strategy used to Validate right before Codegen.
+ * At this point the IL is expected to uphold almost all the Validation Rules.
+ */
+const OMR::ILValidationStrategy OMR::preCodegenValidationStrategy[] =
+   {
+   { OMR::soundnessRule                             },
+   { OMR::validateBinaryOpcodeChildLayout           },
+   { OMR::validateChildCount                        },
+   { OMR::validateChildTypes                        },
+   { OMR::validateLivenessBoundaries                },
+   { OMR::validateNodeRefCountWithinBlock           },
+   { OMR::validate_axaddPlatformSpecificRequirement },
+   { OMR::validate_ireturnReturnType                },
+   { OMR::validate_noDeprecatedOpcodes              },
+   { OMR::endRules                                  }
+   };
+
+/**************************************************************************
+ * The following array of ILValidation Strategy pointers, help provide a
+ * convenient way of selecting a set of ILValidation Rules while Validating
+ * the IL corresponding to a particular Method.
+ *
+ * At any point after ILgeneration, a call of the following form will
+ * validate the current IL based on preCodegenValidationStrategy.
+ *
+ * comp->validateIL(TR::omrValidationStrategies[preCodegenValidation]);
+ *
+ * See ILValidationStrategy.hpp for the possible values of
+ * `TR::ILValidationContext` used to index `TR::omrValidationStrategies`.
+ *
+ **************************************************************************/
+const OMR::ILValidationStrategy* TR::omrValidationStrategies[] =
+   {
+   OMR::emptyStrategy,
+   OMR::preCodegenValidationStrategy,
+   OMR::postILgenValidatonStrategy
+   };
+
+
+/**************************************************************************
+ *
+ * Implementation of TR::ILValidator
+ *
+ **************************************************************************/
 template <typename T, size_t N> static
 T* begin(T(&reqArray)[N])
   {
@@ -106,7 +181,7 @@ TR::ILValidator::getRequiredMethodValidationRules(const OMR::ILValidationStrateg
       for (auto it = _methodValidationRules.begin(); it != _methodValidationRules.end(); ++it)
          {
          /**
-          *Each *ValidationRule has a unique id. These ids are defined in
+          *Each *ValidationRule has a unique `id`. These ids are defined in
           *ILValidationStrategies.hpp and they are assigned in ILValidationRules.cpp. 
           */
          if (strategy->id == (*it)->id())
@@ -198,27 +273,3 @@ TR::ILValidator* TR::createILValidatorObject(TR::Compilation *comp)
    {
    return new (comp->trHeapMemory()) TR::ILValidator(comp);
    }
-
-// TODO: Implement the following. This would would be used to "fetch" the required strategy.
-/*
-const TR::ILValidationStrategy *OMR::ILValidator::ILValidationStrategy(TR::Compilation *comp)
-   {
-   // Mock Validation Strategies are used for testing, and override 
-   // the default compilation strategy.
-   // Not sure if I need this right now.
-   if (NULL != OMR::ILValidator::_mockValidationStrategy)
-      {
-      traceMsg(c, "Using mock Validation Strategy %p\n", OMR::ILValidator::_mockValidationStrategy);
-      return OMR::ILValidator::_mockValidationStrategy;
-      }
-
-   // Figure out which of the 3 states I'm in maybe?
-   // Options: 1. Right after ILGen, in between every Optimization, right before Codegen
-
-   // Downgrade strategy rather than crashing in prod.
-   if (strategy > lastOMRStrategy)
-      strategy = lastOMRStrategy;
-
-   return omrValidationStrategies[strategy]; // Pass some default.
-   }
-*/

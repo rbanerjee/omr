@@ -19,8 +19,8 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  *******************************************************************************/
 
-#ifndef ILVALIDATIONSTRATEGIES_INCL
-#define ILVALIDATIONSTRATEGIES_INCL
+#ifndef ILVALIDATIONSTRATEGIES_HPP
+#define ILVALIDATIONSTRATEGIES_HPP
 
 #include <stdint.h>                     // for uint16_t
 
@@ -29,7 +29,10 @@ namespace OMR {
 enum ILValidationRule
    {
    soundnessRule,
-   // TODO: Implement this.
+   /**
+    *TODO: For Binary operations that are commutative constants must only
+    *      appear as the rightmost child.
+    */
    validateBinaryOpcodeChildLayout,
    validateChildCount,
    validateChildTypes,
@@ -37,9 +40,15 @@ enum ILValidationRule
    validateNodeRefCountWithinBlock,
    validate_axaddPlatformSpecificRequirement,
    validate_ireturnReturnType,
-   // TODO: Implement this.
+   /* TODO: Report when deprecated opcodes are encountered. Issue #1971 */
    validate_noDeprecatedOpcodes,
-   // Used to mark the end of a ILValidationStrategy.
+   /**
+    * NOTE: Add `id`s for any new ILValidationContext here!
+    *       This needs to match the implementation of said *ILValidationRule.
+    *       Please see ILValidationRules.cpp for relevant examples.
+    */
+
+   /* Used to mark the end of a ILValidationStrategy */
    endRules
    };
 
@@ -66,49 +75,11 @@ struct ILValidationStrategy
 //   OMR::ILValidationOptions     options;
    };
 
-/* Do not perform any Validation under this Strategy. */
-const ILValidationStrategy emptyStrategy[] =
-   {
-   {endRules}
-   };
+extern const ILValidationStrategy emptyStrategy[];
 
-/* Strategy used to Validate right after ILGeneration. */
-const ILValidationStrategy postILgenValidatonStrategy[] =
-   {
-   {soundnessRule               /*TODO: specify default options for this Rule under the said strategy*/},
-   // CLEAN_UP: THIS should fail and hence the need to have a more state aware
-   //           form of validation.
-   //           Keep for now for testing purposes.
-   // This should fail right after ILGeneration.
-   // Since currently TreeSimplifier takes care of this.
-   {validateBinaryOpcodeChildLayout},
-   {validateChildCount},
-   {validateChildTypes},
-   {validateLivenessBoundaries},
-   {validateNodeRefCountWithinBlock},
-   {validate_noDeprecatedOpcodes},
-   {endRules}
-   };
+extern const ILValidationStrategy postILgenValidatonStrategy[];
 
-/**
- * Strategy used to Validate right before Codegen.
- * At this point the IL is expected to uphold almost all the Validation Rules.
- */
-const ILValidationStrategy preCodegenValidationStrategy[] =
-   {
-   {soundnessRule},
-   {validateBinaryOpcodeChildLayout},
-   {validateChildCount},
-   {validateChildTypes},
-   {validateLivenessBoundaries},
-   {validateNodeRefCountWithinBlock},
-   {validate_axaddPlatformSpecificRequirement},
-   {validate_ireturnReturnType},
-   {validate_noDeprecatedOpcodes},
-   {endRules}
-   };
-
-
+extern const ILValidationStrategy preCodegenValidationStrategy[];
 
 } //namespace OMR
 
@@ -119,24 +90,10 @@ enum ILValidationContext
    noValidation,
    preCodegenValidation,
    postILgenValidation
-   // NOTE: Please add any new ILValidationContext here!
+   /* NOTE: Please add any new ILValidationContext here! */
    };
 
-/**
- * Example
- *
- * At any point after ILgeneration, a call of the following form will
- * validate the IL generated from the asscoiated MethodSymbol based on
- * the employed ILValidationStrategy.
- *
- * comp->validateIL(TR::omrValidationStrategies[OMR::preCodegenValidation]);
- */
-const OMR::ILValidationStrategy *omrValidationStrategies[] =
-   {
-   OMR::emptyStrategy,
-   OMR::preCodegenValidationStrategy,
-   OMR::postILgenValidatonStrategy
-   };
+extern const OMR::ILValidationStrategy *omrValidationStrategies[];
 
 /**
  *TODO:  Something to look at in the future.
@@ -150,8 +107,7 @@ const OMR::ILValidationStrategy *omrValidationStrategies[] =
  *       provided by our IL. Which in turn, makes it perfectly reasonable for such
  *       a downstream project to employ their own set of restrictions on the said IL.
  */
-
-//      const ILValidationStrategy * javaValidationStrategy[];
+//      extern const ILValidationStrategy * javaValidationStrategy[];
 
 } // namespace TR
 
