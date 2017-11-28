@@ -122,7 +122,7 @@ TR::ILValidator::ILValidator(TR::Compilation *comp)
       * It is during the call to `validate` where we decide which subset
       * of the available ones we should use for Validation.
       * This also removes the need to initialize a particular set of `Rule` objects
-      * every time a new Strategy is created, or call to `validate` is made.
+      * every time a new Strategy is created, or a call to `validate` is made.
       */
      TR::MethodValidationRule* temp_method_rules[] = { new  TR::SoundnessRule(_comp),
                                                        new  TR::ValidateLivenessBoundaries(_comp) };
@@ -140,7 +140,6 @@ TR::ILValidator::ILValidator(TR::Compilation *comp)
       * need to be updated everytime a new ILValidation Rule
       * is added.
       */
-     // TODO: add validate_noDe.. 
 
      _methodValidationRules.assign(begin(temp_method_rules), end(temp_method_rules));
      _blockValidationRules.assign(begin(temp_block_rules), end(temp_block_rules));

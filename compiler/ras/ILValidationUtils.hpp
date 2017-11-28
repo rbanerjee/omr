@@ -39,10 +39,12 @@ struct NodeState
   NodeState(TR::Node *node):_node(node),_futureReferenceCount(node->getReferenceCount()){}
   };
 
-// This is like a NodeChecklist, but more compact.  Rather than track
-// node global indexes, which can be sparse, this tracks local
-// indexes, which are relatively dense.  Furthermore, the _basis field
-// allows us not to waste space on nodes we saw in prior blocks.
+/**
+ * This is like a NodeChecklist, but more compact.  Rather than track
+ * node global indexes, which can be sparse, this tracks local
+ * indexes, which are relatively dense.  Furthermore, the _basis field
+ * allows us not to waste space on nodes we saw in prior blocks.
+ */
 class LiveNodeWindow
   {
 

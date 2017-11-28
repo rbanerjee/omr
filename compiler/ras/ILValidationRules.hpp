@@ -35,9 +35,9 @@
  *     
  *       3. Finally, the ILValidator is responsible for validating
  *          the IL based on a certain ILValidationStrategy.
- *          So please instantiate the `*ValidationRule` object
- *          corresponding to the newly added rule in
- *          TR::ILValidator's constructor.
+ *          So please instantiate the said `*ValidationRule` object
+ *          during the creation of TR::ILValidator.
+ *
  */
 
 #ifndef ILVALIDATIONRULES_HPP
@@ -86,11 +86,11 @@ class MethodValidationRule
     *        `SoundnessRule`. However we do not stop compilation if we encounter
     *        the use of deprecated OpCodes i.e `validate_noDeprecatedOpcodes` fails]
     *       Eventually we want to be able to make a Rule Strict or not Based on the
-    *       ILValidationStrategy being employed. As in, the same Rule be `Strict` or
+    *       ILValidationStrategy being employed. As in, the same Rule can be `Strict` or
     *       `Lenient` based on the chosen Strategy. Note, the strategy chosen by the
-    *       ILValidator is based on the state of compilation. I.e whether we are in the
-    *       preCodegen phase, just after ILgeneration or inbetween a particular
-    *       Optimization etc. So it makes sense to add that functionality.
+    *       ILValidator should be based on the state of compilation. For example whether
+    *       we are in the  preCodegen phase, just after ILgeneration or inbetween
+    *       a particular Optimization etc.
     *        
     */
    virtual void validate(TR::ResolvedMethodSymbol *methodSymbol) = 0;
