@@ -93,6 +93,7 @@
 #include "optimizer/TransformUtil.hpp"
 #include "ras/Debug.hpp"                       // for TR_DebugBase
 #include "ras/DebugCounter.hpp"                // for TR_DebugCounterGroup, etc
+#include "ras/ILValidationStrategies.hpp"      // for TR::ILValidationContext, TR::omrValidationStrategies, etc
 #include "ras/ILValidator.hpp"                 // for TR::ILValidator
 #include "ras/IlVerifier.hpp"                  // for TR::IlVerifier
 #include "control/Recompilation.hpp"           // for TR_Recompilation, etc
@@ -1024,7 +1025,7 @@ int32_t OMR::Compilation::compile()
       //       of the existing rules.
       //       One potential way of doing this would be to pass Enum symbols
       //       to validateIL in order to specify the state of compilation.
-      self()->validateIL();
+      self()->validateIL(TR::postILgenValidation);
       // TODO: Investigate why we -> Validate the IL if and only if we
       //       are validating the CFG.
 #ifndef DISABLE_CFG_CHECK
@@ -1067,7 +1068,7 @@ int32_t OMR::Compilation::compile()
       // TODO: Validate using only a subset of the existing rules.
       //       The validateIL(..) implementation is not finished yet.
       // Post Optimization Validation.
-      self()->validateIL();
+      self()->validateIL(TR::preCodegenValidation);
 
       if (_ilVerifier && _ilVerifier->verify(_methodSymbol))
          {
@@ -2004,12 +2005,10 @@ void OMR::Compilation::switchCodeCache(TR::CodeCache *newCodeCache)
    }
 
 // TODO: Add Enum overrides for this.
-void OMR::Compilation::validateIL()
+void OMR::Compilation::validateIL(TR::ILValidationContext ilValidationContext)
    {
    TR_ASSERT_FATAL(_ilValidator != NULL, "Attempting to validate the IL without the ILValidator being initialized");
-   // TODO: Pass the overrides to the validate call.
-   //       Maybe check for more ILValidator specific options.
-   _ilValidator->validate();
+   _ilValidator->validate(TR::omrValidationStrategies[ilValidationContext]);
    }
 
 void OMR::Compilation::verifyTrees(TR::ResolvedMethodSymbol *methodSymbol)

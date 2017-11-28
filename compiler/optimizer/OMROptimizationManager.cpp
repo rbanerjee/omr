@@ -40,6 +40,7 @@
 #include "infra/List.hpp"                      // for List
 #include "optimizer/Optimizations.hpp"
 #include "optimizer/Optimizer.hpp"             // for Optimizer
+#include "ras/ILValidationStrategies.hpp"      // for TR::postILgenValidation
 #include "env/CompilerEnv.hpp"
 
 struct OptimizationStrategy;
@@ -291,7 +292,7 @@ void OMR::OptimizationManager::performChecks()
          {
          // TODO: Maybe pass overrides that are specific to a particular
          //       optimization.
-         self()->comp()->validateIL();
+         self()->comp()->validateIL(TR::postILgenValidation);
          }
       }
 
