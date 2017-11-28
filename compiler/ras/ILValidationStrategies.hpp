@@ -108,6 +108,12 @@ const ILValidationStrategy preCodegenValidationStrategy[] =
    {endRules}
    };
 
+
+
+} //namespace OMR
+
+namespace TR {
+
 enum ILValidationContext
    {
    noValidation,
@@ -123,17 +129,14 @@ enum ILValidationContext
  * validate the IL generated from the asscoiated MethodSymbol based on
  * the employed ILValidationStrategy.
  *
- * comp->validateIL(omrValidationStrategies[OMR::preCodegenValidation]);
+ * comp->validateIL(TR::omrValidationStrategies[OMR::preCodegenValidation]);
  */
-const ILValidationStrategy *omrValidationStrategies[] =
+const OMR::ILValidationStrategy *omrValidationStrategies[] =
    {
-   emptyStrategy,
-   preCodegenValidationStrategy,
-   postILgenValidatonStrategy
+   OMR::emptyStrategy,
+   OMR::preCodegenValidationStrategy,
+   OMR::postILgenValidatonStrategy
    };
-
-
- 
 
 /**
  *TODO:  Something to look at in the future.
@@ -147,11 +150,9 @@ const ILValidationStrategy *omrValidationStrategies[] =
  *       provided by our IL. Which in turn, makes it perfectly reasonable for such
  *       a downstream project to employ their own set of restrictions on the said IL.
  */
- 
- //      extern const ILValidationStrategy * javaValidationStrategy[]; 
 
+//      const ILValidationStrategy * javaValidationStrategy[];
 
-} //namespace OMR
-
+} // namespace TR
 
 #endif
