@@ -8208,7 +8208,8 @@ int32_t
 TR_ColdBlockMarker::perform()
    {
    static char *validate = feGetEnv("TR_validateBeforeColdBlockMarker");
-   if (validate)
+   /* The ILValidator is only created if the useILValidator Compiler Option is set */
+   if (validate && comp()->getOption(TR_UseILValidator))
       {
       // TODO: This could potentially be specialized even further.
       comp()->validateIL(TR::postILgenValidation);

@@ -1021,18 +1021,25 @@ int32_t OMR::Compilation::compile()
          self()->getDebug()->print(self()->getOutFile(), self()->getSymRefTab());
          }
 
-      // TODO: See if we only should be validating against a subset
-      //       of the existing rules.
-      //       One potential way of doing this would be to pass Enum symbols
-      //       to validateIL in order to specify the state of compilation.
-      self()->validateIL(TR::postILgenValidation);
-      // TODO: Investigate why we -> Validate the IL if and only if we
-      //       are validating the CFG.
+
+      if (self()->getOption(TR_UseILValidator))
+         {
+         /**
+          *TODO: Investigate why we Validate the IL via verifyTrees if and only if we
+          *      are validating the CFG.
+          */
+         self()->validateIL(TR::postILgenValidation);
+         }
 #ifndef DISABLE_CFG_CHECK
-      // TODO: Once the ILValidator implementation is finished,
-      //       these calls should be removed.
-      self()->verifyTrees (_methodSymbol);
-      self()->verifyBlocks(_methodSymbol);
+      else
+         {
+         /**
+          *TODO: Once the ILValidator implementation is finished,
+          *      these calls should be removed.
+          */
+         self()->verifyTrees (_methodSymbol);
+         self()->verifyBlocks(_methodSymbol);
+         }
 #endif
 
       if (_recompilationInfo)
@@ -1065,10 +1072,18 @@ int32_t OMR::Compilation::compile()
             dumpOptDetails(self(), "failed while verifying compressedRefs anchors\n");
          }
 #endif
-      // TODO: Validate using only a subset of the existing rules.
-      //       The validateIL(..) implementation is not finished yet.
-      // Post Optimization Validation.
-      self()->validateIL(TR::preCodegenValidation);
+
+      /**
+       *TODO: See the comment above regarding verifyTrees being guarded by
+       *      the DISABLE_CFG_CHECK macros.
+       *      If it does turn out to be the case that the guard is necessary,
+       *      then the calls below need to be guarded as well.
+       */
+      // Post Optimization ILValidation.
+      if (self()->getOption(TR_UseILValidator))
+         {
+         self()->validateIL(TR::preCodegenValidation);
+         }
 
       if (_ilVerifier && _ilVerifier->verify(_methodSymbol))
          {

@@ -135,13 +135,10 @@ OMR::IlInjector::genIL()
    bool success = injectIL();
    _comp->setCurrentIlGenerator(0);
 
-   if (success)
+   if (success && _comp->getOption(TR_UseILValidator))
       {
-      // TODO: Investigate if this is the best place to create
-      //       and set up the ILValidator. Though, this is certainly the
-      //       earliest point in the pipeline where it makes sense to do so.
+      /* Setup the ILValidator for the current Compilation Thread. */
       _comp->setILValidator(createILValidatorObject(_comp));
-      _comp->validateIL(TR::postILgenValidation);
       }
 
    return success;

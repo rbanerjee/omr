@@ -670,8 +670,6 @@ public:
 
    TR::ILValidator *getILValidator() { return _ilValidator; }
    void setILValidator(TR::ILValidator *ilValidator) { _ilValidator = ilValidator; }
-   // TODO: Add overrides for Enum values so we can validate the IL accordingly.
-   //       As in depending on whether it is right after il-gen, post-optimization or pre-codegen.
    void validateIL(TR::ILValidationContext ilValidationContext);
 
    void verifyTrees(TR::ResolvedMethodSymbol *s = 0);

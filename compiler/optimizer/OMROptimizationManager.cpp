@@ -278,27 +278,25 @@ void OMR::OptimizationManager::performChecks()
    self()->comp()->reportAnalysisPhase(TR::Optimizer::PERFORMING_CHECKS);
    // From here, down, stack memory allocations will die when the function returns.
    TR::StackMemoryRegion stackMemoryRegion(*(self()->trMemory()));
-   // CLEAN_UP: Instead of doing all of this
-//   self()->comp()->validateIL( ... )
-   //
    if (self()->getVerifyTrees() || self()->comp()->getOption(TR_EnableParanoidOptCheck) || debug("paranoidOptCheck"))
       {
-      if (!self()->comp()->getOption(TR_UseILValidator))
+      if (self()->comp()->getOption(TR_UseILValidator))
          {
-         // TODO: Remove these calls after the ILValidator is complete.
-         self()->comp()->verifyTrees(self()->comp()->getMethodSymbol());
+         self()->comp()->validateIL(TR::postILgenValidation);
          }
       else
          {
-         // TODO: Maybe pass overrides that are specific to a particular
-         //       optimization.
-         self()->comp()->validateIL(TR::postILgenValidation);
+         /**
+          *TODO: Remove the call to verifyTrees and use the ILValidator instead.
+          *NOTE: The validateIL call above can further be specialized for the
+          *      associated Optimization.
+          */
+         self()->comp()->verifyTrees(self()->comp()->getMethodSymbol());
          }
       }
 
    if (self()->getVerifyBlocks() || self()->comp()->getOption(TR_EnableParanoidOptCheck) || debug("paranoidOptCheck"))
       self()->comp()->verifyBlocks(self()->comp()->getMethodSymbol());
-   //
 
    if (self()->getCheckTheCFG() || self()->comp()->getOption(TR_EnableParanoidOptCheck) || debug("paranoidOptCheck"))
       self()->comp()->verifyCFG(self()->comp()->getMethodSymbol());
