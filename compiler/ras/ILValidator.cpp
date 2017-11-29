@@ -53,6 +53,7 @@ const OMR::ILValidationStrategy OMR::postILgenValidatonStrategy[] =
    { OMR::validateChildTypes              },
    { OMR::validateLivenessBoundaries      },
    { OMR::validateNodeRefCountWithinBlock },
+   { OMR::validate_axaddPlatformSpecificRequirement },
    { OMR::validate_noDeprecatedOpcodes    },
    { OMR::endRules                        }
    };
@@ -69,7 +70,6 @@ const OMR::ILValidationStrategy OMR::preCodegenValidationStrategy[] =
    { OMR::validateChildTypes                        },
    { OMR::validateLivenessBoundaries                },
    { OMR::validateNodeRefCountWithinBlock           },
-   { OMR::validate_axaddPlatformSpecificRequirement },
    { OMR::validate_ireturnReturnType                },
    { OMR::validate_noDeprecatedOpcodes              },
    { OMR::endRules                                  }
@@ -95,7 +95,6 @@ const OMR::ILValidationStrategy* TR::omrValidationStrategies[] =
    OMR::preCodegenValidationStrategy,
    OMR::postILgenValidatonStrategy
    };
-
 
 /**************************************************************************
  *
@@ -134,7 +133,7 @@ TR::ILValidator::ILValidator(TR::Compilation *comp)
                                                    new  TR::Validate_ireturnReturnType(_comp),
                                                    new  TR::Validate_axaddPlatformSpecificRequirement(_comp) };
      /**
-      * NOTE: Please initialize any new *ILValidationRule here!
+      * NOTE: Please initialize any new *ValidationRule here!
       *
       * Also, ILValidationRules.hpp and ILValidationStrategies.hpp
       * need to be updated everytime a new ILValidation Rule
@@ -240,13 +239,13 @@ void TR::ILValidator::validate(const OMR::ILValidationStrategy *strategy)
    // Rules that are veriified over the entire method.
    // TODO: find the required RULES. Instead of doing this over all available ones.
    TR::ResolvedMethodSymbol* methodSymbol = comp()->getMethodSymbol();
-   for (auto it = _methodValidationRules.begin(); it != _methodValidationRules.end(); ++it)
+   for (auto it = reqMethodValidationRules.begin(); it != reqMethodValidationRules.end(); ++it)
        {
        (*it)->validate(methodSymbol);
        }
 
    // Checks performed across an extended blocks.
-   for (auto it = _blockValidationRules.begin(); it != _blockValidationRules.end(); ++it)
+   for (auto it = reqBlockValidationRules.begin(); it != reqBlockValidationRules.end(); ++it)
        {
        TR::TreeTop *tt, *exitTreeTop;
        for (tt = methodSymbol->getFirstTreeTop(); tt; tt = exitTreeTop->getNextTreeTop())
@@ -258,7 +257,7 @@ void TR::ILValidator::validate(const OMR::ILValidationStrategy *strategy)
        }
 
    // NodeValidationRules only check per node for a specific property.
-   for (auto it = _nodeValidationRules.begin(); it != _nodeValidationRules.end(); ++it)
+   for (auto it = reqNodeValidationRules.begin(); it != reqNodeValidationRules.end(); ++it)
        {
        for (TR::PreorderNodeIterator nodeIter(methodSymbol->getFirstTreeTop(), comp(), "NODE_VALIDATOR");
             nodeIter.currentTree(); ++nodeIter)
