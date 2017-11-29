@@ -29,15 +29,6 @@
 #include "il/ILOps.hpp"                               // for TR::ILOpCode
 
 
-// CLEAN_UP: This is to preserve backwards compatibility.
-#if defined(DEBUG) || defined(PROD_WITH_ASSUMES)
-#define ABORT() TR::trap()
-#else
-#define ABORT() comp->failCompilation<TR::CompilationException>("Validation error")
-#endif
-
-#define FAIL() if (!feGetEnv("TR_continueAfterValidationError")) ABORT()
-
 TR::LiveNodeWindow::LiveNodeWindow(NodeSideTable<NodeState> &sideTable,
                                    TR_Memory *memory)
    :_sideTable(sideTable)
@@ -49,11 +40,11 @@ TR::LiveNodeWindow::LiveNodeWindow(NodeSideTable<NodeState> &sideTable,
 bool TR::isLoggingEnabled(TR::Compilation *comp)
    {
    // TODO: IL validation should have its own logging option.
-   return (comp->getOption(TR_TraceILWalks));
+   return (comp->getOption(TR_TraceILValidation));
    }
 
 void TR::checkCondition(TR::Node *node, bool condition,
-                           TR::Compilation *comp, const char *formatStr, ...)
+                        TR::Compilation *comp, const char *formatStr, ...)
    {
    if (!condition)
       {
@@ -65,7 +56,12 @@ void TR::checkCondition(TR::Node *node, bool condition,
       vprintDiagnostic(comp, formatStr, args);
       va_end(args);
       printDiagnostic(comp, "\n");
-      FAIL();
+      /**
+       *Safely bring down the VM if the continueAfterILValidationError Compiler Option
+       *is not set.
+       */
+      if (!comp->getOption(TR_continueAfterILValidationError))
+         TR::trap();
       }
    }
 
