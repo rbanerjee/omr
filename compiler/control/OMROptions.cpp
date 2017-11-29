@@ -182,6 +182,7 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
                                TR::Options::setStaticNumeric, (intptrj_t)&OMR::Options::_compThreadCPUEntitlement, 0, "F%d", NOT_IN_SUBSET },
    {"concurrentLPQ", "M\tCompilations from low priority queue can go in parallel with compilations from main queue", SET_OPTION_BIT(TR_ConcurrentLPQ), "F", NOT_IN_SUBSET },
    {"conservativeCompilation","O\tmore conservative decisions regarding compilations", SET_OPTION_BIT(TR_ConservativeCompilation), "F"},
+   {"continueAfterILValidationError", "O\tAll other things held constant, do not abort upon encountering an ILValidation failure.", SET_OPTION_BIT(TR_continueAfterILValidationError), "F"},
    {"count=",             "O<nnn>\tnumber of invocations before compiling methods without loops",
         TR::Options::setCount, offsetof(OMR::Options,_initialCount), 0, " %d"},
 
@@ -1160,6 +1161,8 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
    {"traceILGen",                       "L\ttrace IL generator",                           SET_OPTION_BIT(TR_TraceILGen), "F"},
    {"traceILWalk",                      "L\tsynonym for traceILWalks",                              SET_OPTION_BIT(TR_TraceILWalks), "P" },
    {"traceILWalks",                     "L\ttrace iteration over intermediate language constructs", SET_OPTION_BIT(TR_TraceILWalks), "P" },
+   {"traceILValidation",                "L\tsynonym for traceILValidator",                          SET_OPTION_BIT(TR_TraceILValidation), "P" },
+   {"traceILValidator",                 "L\ttrace validation over intermediate language constructs",SET_OPTION_BIT(TR_TraceILValidation), "P" },
    {"traceInductionVariableAnalysis",   "L\ttrace Induction Variable Analysis",            TR::Options::traceOptimization, inductionVariableAnalysis,       0, "P"},
    {"traceInlining",                    "L\ttrace IL inlining",                            TR::Options::traceOptimization, inlining, 0, "P"},
    {"traceInnerPreexistence",           "L\ttrace inner preexistence",                     TR::Options::traceOptimization, innerPreexistence, 0, "P"},
