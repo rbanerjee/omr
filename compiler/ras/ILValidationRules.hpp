@@ -75,22 +75,22 @@ class MethodValidationRule
    /**
     * @return returns on success.
     *
-    * The Rules are guaranteed to call "FAIL()" upon
-    * encountering the breach of a specified rule and exit based on
-    * the defined protocol.
-    * See ILValidationUtils.cpp for the definition of FAIL().
+    * Otherwise, reports the associated discrepency and
+    * compilation aborts if the `continueAfterILValidationError` option
+    * is not set.
     *
-    * TODO: The behaviour of "FAIL()" (as to whether we abort compilation or not) 
-    *       is currently based on the specified Rule. 
-    *       [For example, we always abort when the IL fails to satisfy the
-    *        `SoundnessRule`. However we do not stop compilation if we encounter
-    *        the use of deprecated OpCodes i.e `validate_noDeprecatedOpcodes` fails]
-    *       Eventually we want to be able to make a Rule Strict or not Based on the
-    *       ILValidationStrategy being employed. As in, the same Rule can be `Strict` or
-    *       `Lenient` based on the chosen Strategy. Note, the strategy chosen by the
-    *       ILValidator should be based on the state of compilation. For example whether
-    *       we are in the  preCodegen phase, just after ILgeneration or inbetween
-    *       a particular Optimization etc.
+    * TODO: The decision as to whether we abort compilation or not,
+    *       is currently based solely on the said Compiler Option.
+    *       However, it makes sense to be a able to make this choice
+    *       based on the Rule we are validating against.
+    *       For example, we should always abort when the IL fails to satisfy the
+    *       `SoundnessRule`. However we should not be required to stop compilation
+    *       upon encountering a deprecated OpCodes.
+    *       Furthermore, this notion of "strictness" should be employable on a
+    *       `ILValidationStrategy` level. As in, the same Rule can be `Strict` or
+    *       `Lenient` based on the chosen Strategy.
+    *       Note, the strategy chosen by the ILValidator is currently
+    *       based on the state of Compilation.
     *        
     */
    virtual void validate(TR::ResolvedMethodSymbol *methodSymbol) = 0;
