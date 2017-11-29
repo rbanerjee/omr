@@ -19,335 +19,256 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  *******************************************************************************/
 
+#include <algorithm>                               // for std::for_each
+
 #include "ras/ILValidator.hpp"
+#include "compile/Compilation.hpp"                 // for Compilation
+#include "infra/Assert.hpp"                        // for TR_ASSERT_FATAL
+#include "infra/ILWalk.hpp"                        // for TR::PreorderNodeIterator
+#include "ras/ILValidationRules.hpp"               // for TR::MethodValidationRules etc.
+#include "ras/ILValidationStrategies.hpp"          // for OMR::ILValidationStrategy,
+                                                   //     OMR::soundnessRule etc.
 
-#include "il/DataTypes.hpp"
-#include "il/Node.hpp"
-#include "il/Node_inlines.hpp"
-#include "il/ILProps.hpp"
-#include "il/ILOps.hpp"
-#include "il/Block.hpp"
-#include "il/Block_inlines.hpp"
-#include "infra/Assert.hpp"
 
-#include <stdarg.h>
+/**************************************************************************
+ *
+ * OMR ILValidation Strategies
+ *
+ **************************************************************************/
 
-#if defined(DEBUG) || defined(PROD_WITH_ASSUMES)
-#define ABORT() TR::trap()
-#else
-#define ABORT() comp()->failCompilation<TR::CompilationException>("Validation error")
-#endif
+/* Do not perform any Validation under this Strategy. */
+const OMR::ILValidationStrategy OMR::emptyStrategy[] =
+   {
+   { OMR::endRules }
+   };
 
-#define FAIL() if (!feGetEnv("TR_continueAfterValidationError")) ABORT()
+/* Strategy used to Validate right after ILGeneration. */
+const OMR::ILValidationStrategy OMR::postILgenValidatonStrategy[] =
+   {
+   { OMR::soundnessRule                   },
+/* { OMR::validateBinaryOpcodeChildLayout }, */
+   { OMR::validateChildCount              },
+   { OMR::validateChildTypes              },
+   { OMR::validateLivenessBoundaries      },
+   { OMR::validateNodeRefCountWithinBlock },
+   { OMR::validate_noDeprecatedOpcodes    },
+   { OMR::endRules                        }
+   };
+
+/**
+ * Strategy used to Validate right before Codegen.
+ * At this point the IL is expected to uphold almost all the Validation Rules.
+ */
+const OMR::ILValidationStrategy OMR::preCodegenValidationStrategy[] =
+   {
+   { OMR::soundnessRule                             },
+   { OMR::validateChildCount                        },
+   { OMR::validateChildTypes                        },
+   { OMR::validateLivenessBoundaries                },
+   { OMR::validateNodeRefCountWithinBlock           },
+   { OMR::validate_ireturnReturnType                },
+   { OMR::validate_noDeprecatedOpcodes              },
+   { OMR::endRules                                  }
+   };
+
+/**************************************************************************
+ * The following array of ILValidation Strategy pointers, help provide a
+ * convenient way of selecting a set of ILValidation Rules while Validating
+ * the IL corresponding to a particular Method.
+ *
+ * At any point after ILgeneration, a call of the following form will
+ * validate the current IL based on preCodegenValidationStrategy.
+ *
+ * comp->validateIL(TR::omrValidationStrategies[preCodegenValidation]);
+ *
+ * See ILValidationStrategy.hpp for the possible values of
+ * `TR::ILValidationContext` used to index `TR::omrValidationStrategies`.
+ *
+ **************************************************************************/
+const OMR::ILValidationStrategy* TR::omrValidationStrategies[] =
+   {
+   OMR::emptyStrategy,
+   OMR::preCodegenValidationStrategy,
+   OMR::postILgenValidatonStrategy
+   };
+
+/**************************************************************************
+ *
+ * Implementation of TR::ILValidator
+ *
+ **************************************************************************/
+template <typename T, size_t N> static
+T* begin(T(&reqArray)[N])
+  {
+  return &reqArray[0];
+  }
+template <typename T, size_t N> static
+T* end(T(&reqArray)[N])
+   {
+   return &reqArray[0]+N;
+   }
 
 TR::ILValidator::ILValidator(TR::Compilation *comp)
    :_comp(comp)
-   ,_isValidSoFar(true)
-   ,_nodeStates(comp->trMemory())
-   ,_liveNodes(_nodeStates, comp->trMemory())
    {
+     /**
+      * All available `*ValidationRules` are initialized during the creation of
+      * ILValidator and they have the same lifetime as the ILValidator itself.
+      * It is during the call to `validate` where we decide which subset
+      * of the available ones we should use for Validation.
+      * This also removes the need to initialize a particular set of `Rule` objects
+      * every time a new Strategy is created, or a call to `validate` is made.
+      */
+     TR::MethodValidationRule* temp_method_rules[] = { new  TR::SoundnessRule(_comp),
+                                                       new  TR::ValidateLivenessBoundaries(_comp) };
+
+     TR::BlockValidationRule* temp_block_rules[] = { new  TR::ValidateNodeRefCountWithinBlock(_comp) };
+
+     TR::NodeValidationRule* temp_node_rules[] = { new  TR::ValidateChildCount(_comp),
+                                                   new  TR::ValidateChildTypes(_comp),
+                                                   new  TR::Validate_ireturnReturnType(_comp) };
+     /**
+      * NOTE: Please initialize any new *ValidationRule here!
+      *
+      * Also, ILValidationRules.hpp and ILValidationStrategies.hpp
+      * need to be updated everytime a new ILValidation Rule
+      * is added.
+      */
+     _methodValidationRules.assign(begin(temp_method_rules), end(temp_method_rules));
+     _blockValidationRules.assign(begin(temp_block_rules), end(temp_block_rules));
+     _nodeValidationRules.assign(begin(temp_node_rules), end(temp_node_rules));
    }
+
+
+template <typename T> static
+void delete_pointed_object(T* const ptr)
+   {
+    delete ptr;
+   }
+
+TR::ILValidator::~ILValidator()
+   {
+   std::for_each(_methodValidationRules.begin(), _methodValidationRules.end(),
+                 delete_pointed_object<TR::MethodValidationRule>);
+   std::for_each(_blockValidationRules.begin(), _blockValidationRules.end(),
+                 delete_pointed_object<TR::BlockValidationRule>);
+   std::for_each(_nodeValidationRules.begin(), _nodeValidationRules.end(),
+                 delete_pointed_object<TR::NodeValidationRule>);
+   }
+
+
 
 TR::Compilation *TR::ILValidator::comp()
    {
    return _comp;
    }
 
-void TR::ILValidator::checkSoundness(TR::TreeTop *start, TR::TreeTop *stop)
+
+std::vector<TR::MethodValidationRule *>
+TR::ILValidator::getRequiredMethodValidationRules(const OMR::ILValidationStrategy *strategy)
    {
-   soundnessRule(start, start != NULL, "Start tree must exist");
-   soundnessRule(stop, !stop || stop->getNode() != NULL, "Stop tree must have a node");
-
-   TR::NodeChecklist treetopNodes(comp()), ancestorNodes(comp()), visitedNodes(comp());
-
-   // Can't use iterators here, because those presuppose the IL is sound.  Walk trees the old-fashioned way.
-   //
-   for (TR::TreeTop *currentTree = start; currentTree != stop; currentTree = currentTree->getNextTreeTop())
+   std::vector<TR::MethodValidationRule *> reqMethodValidationRules;
+   while (strategy->id != OMR::endRules)
       {
-      soundnessRule(currentTree, currentTree->getNode() != NULL, "Tree must have a node");
-      soundnessRule(currentTree, !treetopNodes.contains(currentTree->getNode()), "Treetop node n%dn encountered twice", currentTree->getNode()->getGlobalIndex());
-
-      treetopNodes.add(currentTree->getNode());
-
-      TR::TreeTop *next = currentTree->getNextTreeTop();
-      if (next)
+      for (auto it = _methodValidationRules.begin(); it != _methodValidationRules.end(); ++it)
          {
-         soundnessRule(currentTree, next->getNode() != NULL, "Tree after n%dn must have a node", currentTree->getNode()->getGlobalIndex());
-         soundnessRule(currentTree, next->getPrevTreeTop() == currentTree, "Doubly-linked treetop list must be consistent: n%dn->n%dn<-n%dn", currentTree->getNode()->getGlobalIndex(), next->getNode()->getGlobalIndex(), next->getPrevTreeTop()->getNode()->getGlobalIndex());
+         /**
+          *Each *ValidationRule has a unique `id`. These ids are defined in
+          *ILValidationStrategies.hpp and they are assigned in ILValidationRules.cpp. 
+          */
+         if (strategy->id == (*it)->id())
+            reqMethodValidationRules.push_back((*it));
          }
-      else
+      strategy++;
+      }
+   return reqMethodValidationRules;
+   }
+
+std::vector<TR::BlockValidationRule *>
+TR::ILValidator::getRequiredBlockValidationRules(const OMR::ILValidationStrategy *strategy)
+   {
+   std::vector<TR::BlockValidationRule *> reqBlockValidationRules;
+   while (strategy->id != OMR::endRules)
+      {
+      for (auto it = _blockValidationRules.begin(); it != _blockValidationRules.end(); ++it)
          {
-         soundnessRule(currentTree, stop == NULL, "Reached the end of the trees after n%dn without encountering the stop tree n%dn", currentTree->getNode()->getGlobalIndex(), stop? stop->getNode()->getGlobalIndex() : 0);
-         checkNodeSoundness(currentTree, currentTree->getNode(), ancestorNodes, visitedNodes);
+         if (strategy->id == (*it)->id())
+            reqBlockValidationRules.push_back((*it));
          }
+      strategy++;
       }
+   return reqBlockValidationRules;
    }
 
-void TR::ILValidator::checkNodeSoundness(TR::TreeTop *location, TR::Node *node, NodeChecklist &ancestorNodes, NodeChecklist &visitedNodes)
+std::vector<TR::NodeValidationRule *>
+TR::ILValidator::getRequiredNodeValidationRules(const OMR::ILValidationStrategy *strategy)
    {
-   TR_ASSERT(node != NULL, "checkNodeSoundness requires that node is not NULL");
-   if (visitedNodes.contains(node))
-      return;
-   visitedNodes.add(node);
-
-   soundnessRule(location, !ancestorNodes.contains(node), "n%dn must not be its own ancestor", node->getGlobalIndex());
-   ancestorNodes.add(node);
-
-   for (int32_t i = 0; i < node->getNumChildren(); i++)
+   std::vector<TR::NodeValidationRule *> reqNodeValidationRules;
+   while (strategy->id != OMR::endRules)
       {
-      TR::Node *child = node->getChild(i);
-      soundnessRule(location, child != NULL, "n%dn child %d must not be NULL", node->getGlobalIndex(), i);
-
-      checkNodeSoundness(location, child, ancestorNodes, visitedNodes);
-      }
-
-   ancestorNodes.remove(node);
-   }
-
-void TR::ILValidator::soundnessRule(TR::TreeTop *location, bool condition, const char *formatStr, ...)
-   {
-   if (!condition)
-      {
-      if (location && location->getNode())
-         printDiagnostic("*** VALIDATION ERROR: IL is unsound at n%dn ***\nMethod: %s\n", location->getNode()->getGlobalIndex(), comp()->signature());
-      else
-         printDiagnostic("*** VALIDATION ERROR: IL is unsound ***\nMethod: %s\n", comp()->signature());
-      va_list args;
-      va_start(args, formatStr);
-      vprintDiagnostic(formatStr, args);
-      va_end(args);
-      printDiagnostic("\n");
-      FAIL();
-      }
-   }
-
-void TR::ILValidator::validityRule(Location &location, bool condition, const char *formatStr, ...)
-   {
-   if (!condition)
-      {
-      _isValidSoFar = false;
-      TR::Node *node = location.currentNode();
-      printDiagnostic("*** VALIDATION ERROR ***\nNode: %s n%dn\nMethod: %s\n", node->getOpCode().getName(), node->getGlobalIndex(), comp()->signature());
-      va_list args;
-      va_start(args, formatStr);
-      vprintDiagnostic(formatStr, args);
-      va_end(args);
-      printDiagnostic("\n");
-      FAIL();
-      }
-   }
-
-void TR::ILValidator::updateNodeState(Location &newLocation)
-   {
-   TR::Node  *node = newLocation.currentNode();
-   NodeState &state = _nodeStates[node];
-   if (node->getReferenceCount() == state._futureReferenceCount)
-      {
-      // First occurrence -- do some bookkeeping
-      //
-      if (node->getReferenceCount() == 0)
+      for (auto it = _nodeValidationRules.begin(); it != _nodeValidationRules.end(); ++it)
          {
-         validityRule(newLocation, node->getOpCode().isTreeTop(), "Only nodes with isTreeTop opcodes can have refcount == 0");
+         if (strategy->id == (*it)->id())
+            reqNodeValidationRules.push_back((*it));
          }
-      else
-         {
-         _liveNodes.add(node);
-         }
+      strategy++;
       }
-
-   if (_liveNodes.contains(node))
-      {
-      validityRule(newLocation, state._futureReferenceCount >= 1, "Node already has reference count 0");
-      if (--state._futureReferenceCount == 0)
-         {
-         _liveNodes.remove(node);
-         }
-      }
-   else
-      {
-      validityRule(newLocation, node->getOpCode().isTreeTop(), "Node has already gone dead");
-      }
-
-   if (isLoggingEnabled())
-      {
-      static const char *traceLiveNodesDuringValidation = feGetEnv("TR_traceLiveNodesDuringValidation");
-      if (traceLiveNodesDuringValidation && !_liveNodes.isEmpty())
-         {
-         traceMsg(comp(), "    -- Live nodes: {");
-         char *separator = "";
-         for (LiveNodeWindow::Iterator lnwi(_liveNodes); lnwi.currentNode(); ++lnwi)
-            {
-            traceMsg(comp(), "%sn%dn", separator, lnwi.currentNode()->getGlobalIndex());
-            separator = ", ";
-            }
-         traceMsg(comp(), "}\n");
-         }
-      }
-
+   return reqNodeValidationRules;
    }
 
-bool TR::ILValidator::treesAreValid(TR::TreeTop *start, TR::TreeTop *stop)
+
+void TR::ILValidator::validate(const OMR::ILValidationStrategy *strategy)
    {
-   checkSoundness(start, stop);
 
-   for (PostorderNodeOccurrenceIterator iter(start, _comp, "VALIDATOR"); iter != stop; ++iter)
-      {
-      updateNodeState(iter);
+   /**
+    *Selection Phase:
+    *   From all the available `ILValidationRule`s, only select the ones
+    *   corresponding the given `OMR::ILValidationStrategy`.
+    */
+   std::vector<TR::MethodValidationRule *> reqMethodValidationRules =
+      getRequiredMethodValidationRules(strategy);
+   std::vector<TR::BlockValidationRule *> reqBlockValidationRules =
+      getRequiredBlockValidationRules(strategy);
+   std::vector<TR::NodeValidationRule *> reqNodeValidationRules =
+      getRequiredNodeValidationRules(strategy);
 
-      // General node validation
-      //
-      validateNode(iter);
 
-      //
-      // Additional specific kinds of validation
-      //
+   /**
+    *Validation Phase:
+    *   Validate against the required set of `ILValidationRule`s.
+    */
 
-      TR::Node *node = iter.currentNode();
-      if (node->getOpCodeValue() == TR::BBEnd)
-         {
-         // Determine whether this is the end of an extended block
-         //
-         bool isEndOfExtendedBlock = false;
-         TR::TreeTop *nextTree = iter.currentTree()->getNextTreeTop();
-         if (nextTree)
-            {
-            validityRule(iter, nextTree->getNode()->getOpCodeValue() == TR::BBStart, "Expected BBStart after BBEnd");
-            isEndOfExtendedBlock = ! nextTree->getNode()->getBlock()->isExtensionOfPreviousBlock();
-            }
-         else
-            {
-            isEndOfExtendedBlock = true;
-            }
+   /* Rules that are veriified over the entire method. */
+   TR::ResolvedMethodSymbol* methodSymbol = comp()->getMethodSymbol();
+   for (auto it = reqMethodValidationRules.begin(); it != reqMethodValidationRules.end(); ++it)
+       {
+       (*it)->validate(methodSymbol);
+       }
 
-         if (isEndOfExtendedBlock)
-            validateEndOfExtendedBlock(iter);
-         }
+   /* Checks performed across an extended blocks. */
+   for (auto it = reqBlockValidationRules.begin(); it != reqBlockValidationRules.end(); ++it)
+       {
+       TR::TreeTop *tt, *exitTreeTop;
+       for (tt = methodSymbol->getFirstTreeTop(); tt; tt = exitTreeTop->getNextTreeTop())
+          {
+          TR::TreeTop *firstTreeTop = tt;
+          exitTreeTop = tt->getExtendedBlockExitTreeTop();
+          (*it)->validate(firstTreeTop, exitTreeTop);
+          }
+       }
 
-      auto opcode = node->getOpCode();
-      if (opcode.expectedChildCount() != ILChildProp::UnspecifiedChildCount)
-         {
-         // Validate child expectations
-         //
-
-         const auto expChildCount = opcode.expectedChildCount();
-         const auto actChildCount = node->getNumChildren();
-
-         // validate child count
-         if (!opcode.canHaveGlRegDeps())
-            {
-            // in the common case, no GlRegDeps child is expect nor present
-            validityRule(iter, actChildCount == expChildCount,
-                         "Child count %d does not match expected value of %d", actChildCount, expChildCount);
-            }
-         else if (actChildCount == (expChildCount + 1))
-            {
-            // adjust expected child number to account for a possible extra GlRegDeps
-            // child and make sure the last child is actually a GlRegDeps
-            validityRule(iter, node->getChild(actChildCount - 1)->getOpCodeValue() == TR::GlRegDeps,
-                         "Child count %d does not match expected value of %d (%d without GlRegDeps) and last child is not a GlRegDeps",
-                         actChildCount, expChildCount + 1, expChildCount);
-            }
-         else
-            {
-            // if expected and actual child counts don't match, then the child
-            // count is just wrong, even with an expected GlRegDeps
-            validityRule(iter, actChildCount == expChildCount,
-                         "Child count %d matches neither expected values of %d (without GlRegDeps) nor %d (with GlRegDeps)",
-                         actChildCount, expChildCount, expChildCount + 1);
-            }
-
-         // validate child types
-         for (auto i = 0; i < actChildCount; ++i)
-            {
-            auto childOpcode = node->getChild(i)->getOpCode();
-            const auto expChildType = opcode.expectedChildType(i);
-            const auto actChildType = childOpcode.getDataType().getDataType();
-            const auto expChildTypeName = (expChildType >= TR::NumTypes) ? "UnspecifiedChildType" : TR::DataType::getName(expChildType);
-            const auto actChildTypeName = TR::DataType::getName(actChildType);
-            if (childOpcode.getOpCodeValue() != TR::GlRegDeps)
-               {
-               validityRule(iter, ((expChildType >= TR::NumTypes) || (actChildType == expChildType)),
-                            "Child %d has unexpected type %s (expected %s)" , i, actChildTypeName, expChildTypeName);
-               }
-            else
-               {
-               // make sure the node is allowed to have a GlRegDeps child
-               // and make sure that it is the last child
-               validityRule(iter, opcode.canHaveGlRegDeps() && (i == actChildCount - 1), "Unexpected GlRegDeps child %d", i);
-               }
-
-            // ireturn may have i, or s, or b returns. 
-            if (opcode.getOpCodeValue() == TR::ireturn) 
-               {
-               validityRule(iter,(actChildType == TR::Int32 ||
-                                  actChildType == TR::Int16 ||
-                                  actChildType == TR::Int8),
-                                 "ireturn has an invalid child type %s (expected Int{8,16,32})", actChildTypeName);
-               }
-            }
-         }
-      }
-
-   return _isValidSoFar;
+   /* NodeValidationRules only check per node for a specific property. */
+   for (auto it = reqNodeValidationRules.begin(); it != reqNodeValidationRules.end(); ++it)
+       {
+       for (TR::PreorderNodeIterator nodeIter(methodSymbol->getFirstTreeTop(), comp(), "NODE_VALIDATOR");
+            nodeIter.currentTree(); ++nodeIter)
+	   {
+	   (*it)->validate(nodeIter.currentNode());
+	   }  
+       }
    }
 
-void TR::ILValidator::validateNode(Location &location)
+TR::ILValidator* TR::createILValidatorObject(TR::Compilation *comp)
    {
-   }
-
-void TR::ILValidator::validateEndOfExtendedBlock(Location &location)
-   {
-   // Ensure there are no nodes live across the end of a block
-   //
-   for (LiveNodeWindow::Iterator lnwi(_liveNodes); lnwi.currentNode(); ++lnwi)
-      validityRule(location, false, "Node cannot live across block boundary at n%dn", lnwi.currentNode()->getGlobalIndex());
-
-   // At the end of an extended block, no node we've already seen could ever be seen again.
-   // Slide the live node window to keep its bitvector compact.
-   //
-   if (_liveNodes.isEmpty())
-      _liveNodes.startNewWindow();
-   }
-
-TR::ILValidator::LiveNodeWindow::LiveNodeWindow(NodeSideTable<NodeState> &sideTable, TR_Memory *memory)
-   :_sideTable(sideTable)
-   ,_basis(0)
-   ,_liveOffsets(10, memory, stackAlloc, growable)
-   {
-   }
-
-bool TR::ILValidator::isLoggingEnabled()
-   {
-   // TODO: IL validation should have its own logging option.
-   return (comp()->getOption(TR_TraceILWalks));
-   }
-
-void TR::ILValidator::printDiagnostic(const char *formatStr, ...)
-   {
-   va_list stderr_args;
-   va_start(stderr_args, formatStr);
-   vfprintf(stderr, formatStr, stderr_args);
-   va_end(stderr_args);
-   if (comp()->getOutFile() != NULL)
-      {
-      va_list log_args;
-      va_start(log_args, formatStr);
-      comp()->diagnosticImplVA(formatStr, log_args);
-      va_end(log_args);
-      }
-   }
-
-void TR::ILValidator::vprintDiagnostic(const char *formatStr, va_list ap)
-   {
-   va_list stderr_copy;
-   va_copy(stderr_copy, ap);
-   vfprintf(stderr, formatStr, stderr_copy);
-   va_end(stderr_copy);
-   if (comp()->getOutFile() != NULL)
-      {
-      va_list log_copy;
-      va_copy(log_copy, ap);
-      comp()->diagnosticImplVA(formatStr, log_copy);
-      va_end(log_copy);
-      }
+   return new (comp->trHeapMemory()) TR::ILValidator(comp);
    }
