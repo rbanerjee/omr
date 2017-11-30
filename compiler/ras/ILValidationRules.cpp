@@ -141,7 +141,12 @@ void TR::SoundnessRule::checkSoundnessCondition(TR::TreeTop *location, bool cond
       TR::vprintDiagnostic(_comp, formatStr, args);
       va_end(args);
       TR::printDiagnostic(_comp, "\n");
-      TR::trap();
+      /**
+       *Safely bring down the VM if the continueAfterILValidationError Compiler Option
+       *is not set.
+       */
+      if (!_comp->getOption(TR_continueAfterILValidationError))
+         TR::trap();
       }
    }
 

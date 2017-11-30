@@ -75,9 +75,9 @@ class MethodValidationRule
    /**
     * @return returns on success.
     *
-    * Otherwise, reports the associated discrepency and
-    * compilation aborts if the `continueAfterILValidationError` option
-    * is not set.
+    * Otherwise, reports the relevant errors.
+    * After which, safely brings down the VM if the `continueAfterILValidationError`
+    * Compiler Option is not set.
     *
     * TODO: The decision as to whether we abort compilation or not,
     *       is currently based solely on the said Compiler Option.
@@ -150,10 +150,9 @@ class BlockValidationRule
    /**
     * @return returns on success.
     *
-    * The Rules are guaranteed to call "FAIL()" upon
-    * encountering the breach of a specified rule and exit based on
-    * the defined protocol.
-    * See ILValidationUtils.cpp for the definition of FAIL().
+    * Otherwise, reports the relevant errors.
+    * After which, safely brings down the VM if the `continueAfterILValidationError`
+    * Compiler Option is not set.
     */
    virtual void validate(TR::TreeTop *firstTreeTop, TR::TreeTop *exitTreeTop) = 0;
 
@@ -193,16 +192,11 @@ class NodeValidationRule
    {
    }
    /**
-    * Verify the node(TR::Node) of a method has certain properties.
-    *
     * @return returns on success.
     *
-    * The Rules are guaranteed to call "FAIL()" upon
-    * encountering the breach of a specified rule and exit based on
-    * the defined protocol.
-    * See ILValidationUtils.cpp for the definition of FAIL().
-    * @return 0 on success, or a non-zero error code. If non-zero is returned,
-    * compilation stops.
+    * Otherwise, reports the relevant errors.
+    * After which, safely brings down the VM if the `continueAfterILValidationError`
+    * Compiler Option is not set.
     */
    virtual void validate(TR::Node *node) = 0;
 
