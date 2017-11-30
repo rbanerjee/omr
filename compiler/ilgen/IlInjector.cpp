@@ -36,7 +36,8 @@
 #include "ilgen/IlInjector.hpp"
 #include "ilgen/TypeDictionary.hpp"
 #include "infra/Cfg.hpp"
-#include "ras/ILValidator.hpp"
+#include "ras/ILValidationStrategies.hpp"      // for TR::postILgenValidation
+#include "ras/ILValidator.hpp"                 // for TR::ILValidator
 
 #define OPT_DETAILS "O^O ILGEN: "
 
@@ -134,10 +135,18 @@ OMR::IlInjector::genIL()
    bool success = injectIL();
    _comp->setCurrentIlGenerator(0);
 
-   if (success)
+/**
+ *TODO: There should be a more better way of deciding whether we should
+ *      be creating the ILValidator object.
+ *      The guard below follows the current convention around it.
+ */
+#if !defined(DISABLE_CFG_CHECK)
+   if (success && _comp->getOption(TR_UseILValidator))
       {
-      /* The ILValidator is still a WIP at this point. */
+      /* Setup the ILValidator for the current Compilation Thread. */
+      _comp->setILValidator(createILValidatorObject(_comp));
       }
+#endif
 
    return success;
    }

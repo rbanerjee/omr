@@ -94,7 +94,7 @@
 #include "optimizer/UseDefInfo.hpp"            // for TR_UseDefInfo
 #include "ras/Debug.hpp"                       // for TR_DebugBase
 #include "ras/DebugCounter.hpp"                // for TR::DebugCounter, etc
-#include "ras/ILValidator.hpp"                 // for TR::ILValidator
+#include "ras/ILValidationStrategies.hpp"      // for TR::postILgenValidation
 #include "runtime/Runtime.hpp"
 
 #ifdef J9_PROJECT_SPECIFIC
@@ -8175,9 +8175,11 @@ int32_t
 TR_ColdBlockMarker::perform()
    {
    static char *validate = feGetEnv("TR_validateBeforeColdBlockMarker");
-   if (validate)
+   /* The ILValidator is only created if the useILValidator Compiler Option is set */
+   if (validate && comp()->getOption(TR_UseILValidator))
       {
-      /* The ILValidator is still a WIP at this point. */
+      // TODO: This could potentially be specialized even further.
+      comp()->validateIL(TR::postILgenValidation);
       }
 
    identifyColdBlocks();

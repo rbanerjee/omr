@@ -40,7 +40,7 @@
 #include "infra/List.hpp"                      // for List
 #include "optimizer/Optimizations.hpp"
 #include "optimizer/Optimizer.hpp"             // for Optimizer
-#include "ras/ILValidator.hpp"                 // for TR::ILValidator
+#include "ras/ILValidationStrategies.hpp"      // for TR::postILgenValidation
 #include "env/CompilerEnv.hpp"
 
 struct OptimizationStrategy;
@@ -280,13 +280,18 @@ void OMR::OptimizationManager::performChecks()
    TR::StackMemoryRegion stackMemoryRegion(*(self()->trMemory()));
    if (self()->getVerifyTrees() || self()->comp()->getOption(TR_EnableParanoidOptCheck) || debug("paranoidOptCheck"))
       {
-      if (!self()->comp()->getOption(TR_UseILValidator))
+      if (self()->comp()->getOption(TR_UseILValidator))
          {
-         self()->comp()->verifyTrees(self()->comp()->getMethodSymbol());
+         self()->comp()->validateIL(TR::postILgenValidation);
          }
       else
          {
-         /* The ILValidator is still a WIP at this point. */
+         /**
+          *TODO: Remove the call to verifyTrees and use the ILValidator instead.
+          *NOTE: The validateIL call above can further be specialized for the
+          *      associated Optimization.
+          */
+         self()->comp()->verifyTrees(self()->comp()->getMethodSymbol());
          }
       }
 

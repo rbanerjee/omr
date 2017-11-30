@@ -93,6 +93,8 @@
 #include "optimizer/TransformUtil.hpp"
 #include "ras/Debug.hpp"                       // for TR_DebugBase
 #include "ras/DebugCounter.hpp"                // for TR_DebugCounterGroup, etc
+#include "ras/ILValidationStrategies.hpp"      // for TR::ILValidationContext, TR::omrValidationStrategies, etc
+#include "ras/ILValidator.hpp"                 // for TR::ILValidator
 #include "ras/IlVerifier.hpp"                  // for TR::IlVerifier
 #include "control/Recompilation.hpp"           // for TR_Recompilation, etc
 #include "runtime/CodeCacheExceptions.hpp"
@@ -219,6 +221,7 @@ OMR::Compilation::Compilation(
    _aliasRegion(heapMemoryRegion),
    _allocatorName(NULL),
    _ilGenerator(0),
+   _ilValidator(NULL),
    _optimizer(0),
    _currentSymRefTab(NULL),
    _recompilationInfo(0),
@@ -1008,9 +1011,26 @@ int32_t OMR::Compilation::compile()
          self()->dumpMethodTrees("Initial Trees");
          self()->getDebug()->print(self()->getOutFile(), self()->getSymRefTab());
          }
-#ifndef DISABLE_CFG_CHECK
-      self()->verifyTrees (_methodSymbol);
-      self()->verifyBlocks(_methodSymbol);
+/**
+*TODO: Investigate why the existing policy is to Validate the IL if and
+*      only if we are validating the CFG.
+*      Also, we perhaps need a more robust way of determining whether we should
+*      be validating the IL or not.
+*/
+#if !defined(DISABLE_CFG_CHECK)
+      if (self()->getOption(TR_UseILValidator))
+         {
+         self()->validateIL(TR::postILgenValidation);
+         }
+      else
+         {
+         /**
+          *TODO: Once the ILValidator implementation is finished,
+          *      these calls should be removed.
+          */
+         self()->verifyTrees (_methodSymbol);
+         self()->verifyBlocks(_methodSymbol);
+         }
 #endif
 
       if (_recompilationInfo)
@@ -1039,6 +1059,13 @@ int32_t OMR::Compilation::compile()
             dumpOptDetails(self(), "successfully verified compressedRefs anchors\n");
          else
             dumpOptDetails(self(), "failed while verifying compressedRefs anchors\n");
+         }
+#endif
+
+#if !defined(DISABLE_CFG_CHECK)
+      if (self()->getOption(TR_UseILValidator))
+         {
+         self()->validateIL(TR::preCodegenValidation);
          }
 #endif
 
@@ -1970,6 +1997,12 @@ void OMR::Compilation::switchCodeCache(TR::CodeCache *newCodeCache)
 
       self()->failCompilation<TR::CodeCacheError>("Already committed to current code cache");
       }
+   }
+
+void OMR::Compilation::validateIL(TR::ILValidationContext ilValidationContext)
+   {
+   TR_ASSERT_FATAL(_ilValidator != NULL, "Attempting to validate the IL without the ILValidator being initialized");
+   _ilValidator->validate(TR::omrValidationStrategies[ilValidationContext]);
    }
 
 void OMR::Compilation::verifyTrees(TR::ResolvedMethodSymbol *methodSymbol)
