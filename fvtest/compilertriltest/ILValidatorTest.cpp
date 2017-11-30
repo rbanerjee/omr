@@ -41,10 +41,23 @@ TEST_P(IllformedTrees, FailCompilation) {
 INSTANTIATE_TEST_CASE_P(ILValidatorDeathTest, IllformedTrees, ::testing::Values(
     "(method return=Int32 (block (ireturn (iadd (iconst 1) (sconst 3)))))",
     "(method return=Int32 (block (ireturn (sadd (iconst 1) (iconst 3)))))",
-    "(method return=Address (block (areturn (aiadd (aconst 4) (lconst 1)))))",
     "(method return=Address (block (areturn (aladd (aconst 4) (iconst 1)))))",
-    "(method return=Address (block (areturn (aiadd (iconst 1) (aconst 4)))))",
     "(method return=Address (block (areturn (aladd (lconst 1) (aconst 4)))))",
+     // TODO: The opcodes aiadd and auiadd are only valid on 32 bit platforms (Issue #566).
+     //       So the Trees below will always fail compilation on non-32 bit platforms
+     //       and it only makes sense to test with them when running on a 32 bit platform.
+     //       Overall we need a better strategy for writing platform specific Tril Tests.
+     //       See: Issue #1843
+     // aiadd | auiadd childProperties = TWO_CHILD(TR::Address, TR::Int32)
+#if defined(TR_TARGET_32BIT)
+    "(method return=Address (block (areturn (aiadd (aconst 4) (lconst 1)))))",
+    "(method return=Address (block (areturn (aiadd (iconst 1) (aconst 4)))))",
+#else
+    // Illformed because aiadd is invalid on non-32 bit platforms.
+    // See: Issue #566
+    "(method return=Address (block (areturn (aiadd (aconst 1) (iconst 4)))))",
+    "(method return=Address (block (areturn (auiadd (aconst 1) (iconst 4)))))",
+#endif
     "(method return=Int32 (block (ireturn (acmpeq (iconst 4) (aconst 4)))))",
     "(method return=Int32 (block (ireturn (acmpge (lconst 4) (aconst 4)))))",
     "(method return=NoType (block (return (GlRegDeps))))",
@@ -74,6 +87,12 @@ INSTANTIATE_TEST_CASE_P(ILValidatorTest, WellformedTrees, ::testing::Values(
     "(method return=Int32 (block (ireturn (s2i (sconst 3)))))",
     "(method return=Int32 (block (ireturn (iadd (iconst 1) (iconst 3)))))",
     "(method return=Address (block (areturn (aladd (aconst 4) (lconst 1)))))",
+     // TODO: aiadd and auiadd are only valid on 32 bit platforms.
+     //       See comment above regarding seperating these out based on platform.
+#if defined(TR_TARGET_32BIT)
+    "(method return=Address (block (areturn (aiadd (aconst 1) (iconst 4)))))",
+    "(method return=Address (block (areturn (auiadd (aconst 1) (iconst 4)))))",
+#endif
     "(method return=Int32 (block (ireturn (acmpge (aconst 4) (aconst 4)))))",
     "(method return=Int32 (block (ireturn (scmpeq (sconst 1) (sconst 3)))))",
     "(method return=Int32 (block (ireturn (lcmpeq (lconst 1) (lconst 3)))))"

@@ -445,3 +445,25 @@ void TR::Validate_ireturnReturnType::validate(TR::Node *node)
          }
       }
    }
+
+/**
+ * Validate_axaddPlatformSpecificRequirement (a TR::NodeValidationRule).
+ */
+TR::Validate_axaddPlatformSpecificRequirement::Validate_axaddPlatformSpecificRequirement(TR::Compilation *comp)
+   : _comp(comp)
+   , NodeValidationRule(OMR::validate_axaddPlatformSpecificRequirement)
+   {
+   }
+
+void TR::Validate_axaddPlatformSpecificRequirement::validate(TR::Node *node)
+   {
+   auto opcode = node->getOpCode();
+   auto opcodeCodeValue = opcode.getOpCodeValue();
+   if (opcodeCodeValue == TR::aiadd ||
+       opcodeCodeValue == TR::aiuadd)
+      {
+      TR::checkCondition(node, TR::Compiler->target.is32Bit() == true, _comp,
+                               "%s is only valid on 32 bit platforms",
+                               opcode.getName());
+      }
+   }

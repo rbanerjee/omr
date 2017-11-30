@@ -51,6 +51,7 @@ const OMR::ILValidationStrategy OMR::postILgenValidatonStrategy[] =
    { OMR::validateChildTypes              },
    { OMR::validateLivenessBoundaries      },
    { OMR::validateNodeRefCountWithinBlock },
+   { OMR::validate_axaddPlatformSpecificRequirement },
    { OMR::validate_noDeprecatedOpcodes    },
    { OMR::endRules                        }
    };
@@ -126,7 +127,8 @@ TR::ILValidator::ILValidator(TR::Compilation *comp)
 
      TR::NodeValidationRule* temp_node_rules[] = { new  TR::ValidateChildCount(_comp),
                                                    new  TR::ValidateChildTypes(_comp),
-                                                   new  TR::Validate_ireturnReturnType(_comp) };
+                                                   new  TR::Validate_ireturnReturnType(_comp),
+                                                   new  TR::Validate_axaddPlatformSpecificRequirement(_comp) };
      /**
       * NOTE: Please initialize any new *ValidationRule here!
       *

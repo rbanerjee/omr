@@ -246,6 +246,21 @@ class Validate_ireturnReturnType : public TR::NodeValidationRule
    void validate(TR::Node *node);
    };
 
+/**
+ * The OpCodes aiadd and aiuadd are only valid on 32 bit platforms.
+ * See: Issue #556
+ */
+class Validate_axaddPlatformSpecificRequirement : public TR::NodeValidationRule
+   {
+   TR::Compilation  *_comp;
+
+   public:
+
+   Validate_axaddPlatformSpecificRequirement(TR::Compilation *comp);
+
+   void validate(TR::Node *node);
+   };
+
 /* NOTE: Please add any new NodeValidationRules here */
 
 } //namespace TR

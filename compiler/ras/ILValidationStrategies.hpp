@@ -38,10 +38,7 @@ enum ILValidationRule
    validateChildTypes,
    validateLivenessBoundaries,
    validateNodeRefCountWithinBlock,
-   /**
-    *TODO: The aiadd OpCode is only valid when the platform we are compiling
-    *on is a 32 bit one.
-    */
+   validate_axaddPlatformSpecificRequirement,
    validate_ireturnReturnType,
    /* TODO: Report when deprecated opcodes are encountered. Issue #1971 */
    validate_noDeprecatedOpcodes,
